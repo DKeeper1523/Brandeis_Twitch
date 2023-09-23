@@ -1,5 +1,5 @@
 import pandas as pd
-from fuzzywuzzy import process
+from fuzzywuzzy import process, fuzz
 import re
 import logging
 
@@ -46,7 +46,6 @@ def fix_col_with_replace(ls_col_id, ls_truth):
         ls_bad = ls_bad|set(df_analysis[column_name])
 
     dict_guess = createDictGuess(ls_bad, ls_truth)
-    print(dict_guess)
     for key in dict_guess.keys():
         for columnName in ls_col_id:
             df_analysis[columnName] = df_analysis[columnName].replace(key, dict_guess[key])
@@ -68,23 +67,6 @@ df_info = pd.read_csv(path_info)
 
 #First Step, Ensure game view
 df_analysis = df_analysis.loc[df_analysis["Stage"].notnull()]
- 
-
-#FIX MAP NAMES:
-#All csgo maps
-ls_map_name = ["inferno", 'mirage', 'nuke', 'overpass', 'vertigo', 'ancient', 'anubis', 'dust ii', 'train', 'cache']
-fix_col_with_replace(["Map"], ls_map_name)
-
-#FIX TEAM NAMES
-ls_team_name =  list(df_info['Team'])
-fix_col_with_replace(["Team_0", "Team_1"], ls_team_name)
-
-
-#FIX BOs
-ls_BO = ["BO1", "BO3"]
-fix_col_with_replace(["BO"], ls_BO)
-
-test_pd = df_info['Team']
 
 #needs a function that operate on cell, so "fun" needs to return a string
 def fix_col_with_fun(ls_col_name, fun):
@@ -115,18 +97,55 @@ def _stage(text):
         comb2 = map_zero[match.group(2)] + '-' + map_zero[match.group(3)]
         return group1 + " "+ comb2
 
+#hp return integer
 def _hp(text):
-    pattern = r'\\p{P}'
+    #Define helper functions
+    #S2 here is a single 
+    subS1WithS2 = lambda s1, s2, txt: re.sub('|'.join([*s1]), s2, txt)
+    def isNum(text, str_num, cutoff = 99, match_partial = False):
+        ratio_100 = fuzz.partial_ratio('100', text) if match_partial else fuzz.ratio(str_num, text)
+        return True if ratio_100 > cutoff else False
+    
+    punc_pattern = r'\W'
     # Remove all punctuation
-    no_punc = re.sub(pattern, '', text)
-    f3 = no_punc[:3]
-    return f3
+    no_punc = re.sub(punc_pattern, '', text).strip().lower() #remove white space, convert to lower
+
+    zero_ready = subS1WithS2('oOu','0', no_punc)
+    one_ready = subS1WithS2('ji','1', zero_ready)
+
+    #match 100 as it counts for significant portion of data, and lots of error
+    if isNum(one_ready, '0'):
+        return 0
+    elif isNum(one_ready, '100', match_partial=True):
+        return 100
+    
+    #drop all letters
+    try:
+        only_digits = int(re.sub('[a-z]','', one_ready)[:2])
+        #if digits are greater than 100, remove the last digit
+        if only_digits > 100:
+            only_digits = only_digits//10
+        return only_digits
+    except:
+        logging.error("<HP> Unable to convert \'" + text + "\' to appropriate hp integer \'[0-100]\'")
+    
+
+#FIX MAP, TeamName, and BOs
+#init all ground truth
+ls_map_name = ["inferno", 'mirage', 'nuke', 'overpass', 'vertigo', 'ancient', 'anubis', 'dust ii', 'train', 'cache']
+ls_team_name =  list(df_info['Team'])
+ls_BO = ["BO1", "BO3"]
+
+fix_col_with_replace(["Map"], ls_map_name)
+fix_col_with_replace(["Team_0", "Team_1"], ls_team_name)
+fix_col_with_replace(["BO"], ls_BO)
 
 # #use regex fix time
 fix_col_with_fun(['Stage'], _stage)
 fix_col_with_fun(['Ingame_Time_Left'], _time)
 fix_col_with_fun(['Player_HP_'+str(i) for i in range(10)], _hp)
 
-print(df_analysis['Stage'].head(10))
+
 df_analysis.to_csv(file_name + "_clean.csv", index = False)
+
 

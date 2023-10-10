@@ -73,20 +73,27 @@ if __name__ == "__main__":
         #First modify
         cleanInGameTime(group, ROUND_TIME, BOMB_TIME)
 
+        # printFull(group[ROUND_TIME])
+
         #Fix HP
         #  - ensuring that all hp is in descending order
         ensureColsDesend(group, HP_HEADERS)
+
+        #update
+        df_analysis.update(group)
+        print("group updated")
+
         #NYI removing group with failed split
         if split_success:
-            #update
-            df_analysis.update(group)
-            print("group updated")
             #update map type
-            ls_2int = [T1_MAP_SCORE, T0_MAP_SCORE, 'BO', 'Score_0', 'Score_1']
-            convertCols2Numeric(df_analysis, ls_2int)
+            ls_2int = [ROUND_TIME, BOMB_TIME, T1_MAP_SCORE, T0_MAP_SCORE, 'Score_0', 'Score_1']
+            convertCols2Numeric(df_analysis, ls_2int, _errors = 'coerce')
         else:
             print("STAGE_SPLIT Failed: because stage is not recognizable\n - dropping group index: ", group.index)
             df_analysis.drop(group.index, inplace = True)
+
+        # if i >3:
+        #     break
     # """
 
     #convert hp to int type

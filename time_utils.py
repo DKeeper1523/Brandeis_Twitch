@@ -2,7 +2,7 @@ import pandas as pd
 import numpy as np
 from collections import Counter
 
-def _printFull(df, NAME_DF = ""):
+def printFull(df, NAME_DF = ""):
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
         print("PRINTING FULL " + NAME_DF + ": \n", df)
 
@@ -36,9 +36,6 @@ def cleanInGameTime(df, header_ingame_time, header_bombtime):
     
     #fill bomb timer
     fillBombeTimer(df, header_ingame_time, header_bombtime)
-
-    #clean up ingame_time section (where bomb timer was)
-    df[header_ingame_time].fillna(np.nan)
 
     #setting round time
     MAX_ROUND_TIME = 120 #2 minute per round

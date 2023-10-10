@@ -2,11 +2,14 @@ from utils import *
 from hp_utils import *
 from time_utils import *
 #Constants
-path_analysis = "E:\dev\Python\CS_Twitch\\video_analysis.csv"
-path_info = "E:\dev\Python\CS_Twitch\\basic_information.csv"
+# path_analysis = "E:\dev\Python\CS_Twitch\\video_analysis.csv"
+# path_info = "E:\dev\Python\CS_Twitch\\basic_information.csv"
 
-#init logger
-file_name = path_analysis[path_analysis.rindex('\\')+1:-4]
+path_analysis = "/Users/tianyaoh/Desktop/dev/CS_Twitch/Brandeis_Twitch_RA/video_analysis.csv"
+path_info = "/Users/tianyaoh/Desktop/dev/CS_Twitch/Brandeis_Twitch_RA/basic_information.csv"
+
+#init loggers
+file_name = path_analysis[path_analysis.rindex('/')+1:-4]
 init_log(log_name = file_name + ".log")
 
 #read csv to pd.dataframe

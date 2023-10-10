@@ -37,23 +37,54 @@ def cleanInGameTime(df, header_ingame_time, header_bombtime):
     #fill bomb timer
     fillBombeTimer(df, header_ingame_time, header_bombtime)
 
+    #clean up ingame_time section (where bomb timer was)
+    df[header_ingame_time].fillna(np.nan)
+
     #setting round time
     MAX_ROUND_TIME = 120 #2 minute per round
 
+    def _setReasonableRange(df, threshhold_max, step = -1, bool_get = False):
+        try:
+            index_rational_max = df[df <= threshhold_max].idxmax()
+        except:
+            raise Exception
+        index_last_valid = df.last_valid_index()
+        #find the highest in game time recognized
+        rational_max = int(df[index_rational_max])
+        #create assumed true range to fix time
+        round_time_range = df[pd.RangeIndex(index_rational_max, index_last_valid)]
+        #create new round times
+        round_time_range = pd.Series(range(rational_max, rational_max-len(round_time_range), step))
+        if bool_get:
+            return round_time_range
+        else: #set
+            #update df
+            df[pd.RangeIndex(index_rational_max, index_last_valid)].update(round_time_range)
+            #return index of max found
+            return index_rational_max
+
     #check for empty
     if len(float_time[float_time <= MAX_ROUND_TIME]) > 0:
-        index_reasonable_max = float_time[float_time <= MAX_ROUND_TIME].idxmax()
-        index_last_valid = float_time.last_valid_index()
-        #find the highest in game time recognized
-        reasonable_max = int(float_time[index_reasonable_max])
-        #create assumed true range to fix time
-        round_time_range = float_time[pd.RangeIndex(index_reasonable_max, index_last_valid)]
-        #create new round times
-        round_time_range = pd.Series(range(reasonable_max, reasonable_max-len(round_time_range), -1))
-        #update df
-        df[header_ingame_time][pd.RangeIndex(index_reasonable_max, index_last_valid)].update(round_time_range)
-        
-        if index_reasonable_max > 0:
-            preround_index = df[header_ingame_time].index
-            preround_index = preround_index[preround_index < index_reasonable_max]
-            _printFull(df[header_ingame_time][preround_index], "Everything before max")
+        #try guess the round time range
+        index_rational_max = _setReasonableRange(df[header_ingame_time], MAX_ROUND_TIME)
+        #0 check to avoid -1 indexing
+        if index_rational_max > 0:
+            prep_index = df[header_ingame_time].index
+            prep_index = prep_index[prep_index < index_rational_max]
+            #get everything before rational max
+            before_rational_max = df[header_ingame_time][prep_index]
+            #if everything before rational max is above prep max; most-likely everything is recognition error
+            PREP_MAX=20
+            all_big_error = all(before_rational_max>PREP_MAX)
+            #extend rational max out
+            if all_big_error:
+                cur_max = df[header_ingame_time][index_rational_max]
+                new_prep = pd.Series(range(len(before_rational_max), 0, -1)) + cur_max
+            else:
+                # get range guess
+                new_prep = pd.Series(range(len(before_rational_max), 0, -1))
+
+            #Set new prep
+            # _printFull(new_prep, "guess_prep")
+            df[header_ingame_time][prep_index].update(new_prep)
+            # _printFull(df[header_ingame_time][prep_index], "New Prep")

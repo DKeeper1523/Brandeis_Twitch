@@ -86,8 +86,8 @@ if __name__ == "__main__":
         else:
             print("STAGE_SPLIT Failed: because stage is not recognizable\n - dropping group index: ", group.index)
             df_analysis.drop(group.index, inplace = True)
-        if i > 1:
-          break
+        # if i >2:
+        #   break
     # """
 
     #convert hp to int type

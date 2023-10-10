@@ -80,18 +80,17 @@ if __name__ == "__main__":
         if split_success:
             #update
             df_analysis.update(group)
+            print("group updated")
             #update map type
             ls_2int = [T1_MAP_SCORE, T0_MAP_SCORE, 'BO', 'Score_0', 'Score_1']
             convertCols2Numeric(df_analysis, ls_2int)
         else:
             print("STAGE_SPLIT Failed: because stage is not recognizable\n - dropping group index: ", group.index)
             df_analysis.drop(group.index, inplace = True)
-        # if i >2:
-        #   break
     # """
 
     #convert hp to int type
     convertCols2Numeric(df_analysis, HP_HEADERS)
     # print(df_analysis.dtypes)
     #write to csv
-    df_analysis.to_csv(file_name + "_CLEAN.csv", index = False)
+    df_analysis.to_excel(file_name + "_CLEAN.xlsx", index = False)

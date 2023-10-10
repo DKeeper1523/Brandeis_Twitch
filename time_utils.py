@@ -83,8 +83,17 @@ def cleanInGameTime(df, header_ingame_time, header_bombtime):
             else:
                 # get range guess
                 new_prep = pd.Series(range(len(before_rational_max), 0, -1))
-
+            #reset hp
+            resetHP(df, prep_index)
             #Set new prep
             # _printFull(new_prep, "guess_prep")
-            df[header_ingame_time][prep_index].update(new_prep)
-            # _printFull(df[header_ingame_time][prep_index], "New Prep")
+            df[header_ingame_time][prep_index]= new_prep
+            # df.loc[prep_index, header_ingame_time].update(new_prep)
+            # _printFull(df[header_ingame_time], "New Prep")
+
+def resetHP(df, row_indices, hp_headers = ['Player_HP_'+str(i) for i in range(10)]):
+    # ALL_HUNDRED = {hp:100 for hp in hp_headers}
+    # for row in row_indices:
+    if len(row_indices) > 0:
+        df.loc[row_indices, hp_headers] = 100
+        print("Has resetted hp on :", row_indices)

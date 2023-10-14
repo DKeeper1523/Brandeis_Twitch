@@ -58,9 +58,27 @@ BOMB_TIME = 'Ingame_Bomb_Time'
 INGAME_TIME_PASSED = 'Ingame_Time_Passed'
 
 if __name__ == "__main__":
+    #csv names
+    CSV_TEXT = "/audio_text_analysis.csv"
+    CSV_VIDEO = "/video_analysis.csv"
+    CSV_AUDIO = "/audio_analysis.csv"
+
     #brows immediate sub directories
-    for x in next(os.walk(dir_src))[1]: 
-        print(x)
+    gen_sub = (os.walk(dir_src))
+    gen_sub.__next__() #skiping first
+    for x in gen_sub: 
+        name_dataset = x[0]
+        #reading
+        df_text = pd.read_csv(name_dataset + CSV_TEXT)
+        df_video = pd.read_csv(name_dataset + CSV_VIDEO)
+        df_audio = pd.read_csv(name_dataset + CSV_AUDIO)
+
+        print("len text: ", len(df_text))
+        print("len vieo: ", len(df_video))
+        print("len audio: ", len(df_audio))
+  
+
+        print(str(type(x)))
 """
 #Constants
 # path_analysis = "E:\dev\Python\CS_Twitch\\video_analysis.csv"

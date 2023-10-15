@@ -74,8 +74,10 @@ if __name__ == "__main__":
         df_audio = pd.read_csv(name_dataset + CSV_AUDIO)
 
         print("len text: ", len(df_text))
-        print("len vieo: ", len(df_video))
-        print("len audio: ", len(df_audio))
+        diff_video = len(df_text) - len(df_video)
+        print("len vieo: ", len(df_video), '; difference with txt: ', diff_video)
+        diff_audio = len(df_text) - len(df_audio)
+        print("len audio: ", len(df_audio), '; difference with txt: ', diff_audio)
   
 
         print(str(type(x)))

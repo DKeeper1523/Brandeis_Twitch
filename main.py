@@ -1,6 +1,7 @@
 from utils import *
 from hp_utils import *
 from time_utils import *
+from truncate_utils import *
 
 #adding command line running capbility
 import argparse
@@ -73,14 +74,7 @@ if __name__ == "__main__":
         df_video = pd.read_csv(name_dataset + CSV_VIDEO)
         df_audio = pd.read_csv(name_dataset + CSV_AUDIO)
 
-        print("len text: ", len(df_text))
-        diff_video = len(df_text) - len(df_video)
-        print("len vieo: ", len(df_video), '; difference with txt: ', diff_video)
-        diff_audio = len(df_text) - len(df_audio)
-        print("len audio: ", len(df_audio), '; difference with txt: ', diff_audio)
-  
-
-        print(str(type(x)))
+        truncateAll(df_text, df_audio, df_video)
 """
 #Constants
 # path_analysis = "E:\dev\Python\CS_Twitch\\video_analysis.csv"

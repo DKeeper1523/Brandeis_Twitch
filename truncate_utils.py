@@ -39,4 +39,4 @@ def truncateVideo(df_video, len_text, step = 1000):
         pass
     else:
         indicies2drop = range(step, len(df_video), step)
-        print("Video Drop:\n", "\n".join(indicies2drop))
+        print("Video Drop:\n", list(indicies2drop))

@@ -19,27 +19,17 @@ def truncateAudio(df_audio, len_text, num_split = 5):
     if diff <= 0:
         pass
     else:
-
         audio_step = (len(df_audio) - diff)//num_split
-        overflow = (len(df_audio) - diff) % num_split if audio_step > 0 else 0 #range from [0, num_split-1]
-        num_remove_per_step = diff//num_split
         #stepping for inex
-        print("Audio drop: ", diff)
+        FLAG_INDEX = [1,3] #deleting on 2nd and 4th place
+        flag = 0
+        print("Audio drop: ", diff) 
+        #should be log message here
         for i in range(audio_step, len(df_audio), audio_step):
-            print("i:", i)
-            extra =  1 if overflow >= 0 else 0
-            overflow -= 1
-
-            start = i - (num_remove_per_step + extra)
-            range2drop = np.arange(start, i)
-
-            diff -= len(range2drop)
-            if diff <= 0:
-                break
-            #translate
-            print(range2drop)
-            # df_audio.drop(range2drop, inplace = True)
-            #should be log message here
+            if flag in FLAG_INDEX:
+                print(flag)
+                # df_audio.drop(i, inplace = True)
+            flag += 1
         print("truncateAudio Finished")
 
 def truncateVideo(df_video, len_text, step = 1000):
@@ -48,20 +38,5 @@ def truncateVideo(df_video, len_text, step = 1000):
     if diff <= 0:
         pass
     else:
-        arr_seed = np.arange(0, len(df_video), step)
-        num_rep = ceil(diff/len(arr_seed))
-        diff_tile = np.tile(np.arange(num_rep), num_rep)
-        arr_seed = arr_seed.repeat(num_rep)
-        #combine
-        indicies2drop = (arr_seed + diff_tile)
-        #drop extras
-        range_extra =  range(-1, num_rep * (len(arr_seed) - diff),-num_rep)
-        indicies2drop = np.delete(indicies2drop, range_extra)
+        indicies2drop = range(step, len(df_video), step)
         print("Video Drop:\n", "\n".join(indicies2drop))
-
-        # df_video.drop(indicies2drop, inplace=True)
-        #order of elimination can be eliminatedd
-        # while (diff >= 0):
-        #     for i in np.arange(0, len(df_video), step)[::-1]:
-        #         df_video.drop(i, inplace=True)
-        #         diff -= 1

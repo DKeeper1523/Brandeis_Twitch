@@ -1,10 +1,7 @@
 import pandas as pd
 import numpy as np
+from utils import printFull
 from collections import Counter
-
-def printFull(df, NAME_DF = ""):
-    with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
-        print("PRINTING FULL " + NAME_DF + ": \n", df)
 
 def convertCols2DateTime(df, ls_header, _errors = 'ignore'):
     for h in ls_header:
@@ -38,13 +35,10 @@ def cleanInGameTime(df, header_ingame_time, header_bombtime):
     fillBombeTimer(df, header_ingame_time, header_bombtime)
 
     #setting round time
-    MAX_ROUND_TIME = 120 #2 minute per round
+    MAX_ROUND_TIME = 115 #2 minute per round
 
     def _setReasonableRange(df, threshhold_max, step = -1, bool_get = False):
-        try:
-            index_rational_max = df[df <= threshhold_max].idxmax()
-        except:
-            raise Exception
+        index_rational_max = df[df <= threshhold_max].idxmax()
         index_last_valid = df.last_valid_index()
         #find the highest in game time recognized
         rational_max = int(df[index_rational_max])
@@ -84,8 +78,8 @@ def cleanInGameTime(df, header_ingame_time, header_bombtime):
             resetHP(df, prep_index)
             #Set new prep
             # _printFull(new_prep, "guess_prep")
-            df[header_ingame_time][prep_index]= new_prep
-            # df.loc[prep_index, header_ingame_time].update(new_prep)
+            # df[header_ingame_time][prep_index]= new_prep
+            df.loc[prep_index, header_ingame_time].update(new_prep)
             # _printFull(df[header_ingame_time], "New Prep")
 
 def resetHP(df, row_indices, hp_headers = ['Player_HP_'+str(i) for i in range(10)]):

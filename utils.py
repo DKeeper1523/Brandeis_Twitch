@@ -9,14 +9,18 @@ import logging
 STAGE_NAME = "Stage"
 T_STAMP = "Timestamp"
 
+def printFull(df, NAME_DF = ""):
+    with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
+        print("PRINTING FULL " + NAME_DF + ": \n", df)
+
 def init_log(log_name):
     logging.basicConfig(filename=log_name, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     logging.FileHandler(log_name, mode='w')
     print("logger initialized")
 
-def insertBombTimer(df, bt_header):
+def insertTimers(df, ls_headrs):
     #   - str used here is saving info for further modification
-    _insertEmptyColumns(df, [bt_header], i_insert=5, _dtype = str) 
+    _insertEmptyColumns(df, ls_headrs, i_insert=5, _dtype = str) 
 
 def insertMapScores(df, map_score_headers):
     _insertEmptyColumns(df, map_score_headers, i_insert=2, _dtype= int)
@@ -27,13 +31,16 @@ def _insertEmptyColumns(df, ls_col_name, i_insert, _dtype):
         print("inserted ", col_name)
         df.insert(loc = i_insert, column = col_name, value = pd.Series(dtype = _dtype))
 
-def bfillCols(df, ls_header):
+def fillNaCols(df, ls_header, bfill = True, fFill = False):
     for h in ls_header:
-        df[h].bfill(inplace=True)
+        if bfill:
+            df[h].bfill(inplace=True)
+        if fFill:
+            df[h].ffill(inplace=True)
 
 def convertCols2Numeric(df, ls_header, _errors = 'ignore'):
     for h in ls_header:
-        df[h] = pd.to_numeric(df[h], errors= _errors, downcast='integer')
+        df.loc[:, h] = pd.to_numeric(df[h], errors= _errors, downcast='integer')
 
 def groupDf(df):
     def _group_consec_int(ints):
@@ -112,7 +119,7 @@ def time(txt):
 # #Fix Stage
 def stage(text, true_groupstages):
     #strip white space
-    text = text.strip()
+    text = text.strip().lower()
     pattern = r'(\S+\s?)([\d|o|O])\s?\W?\s?([\d|o|O])'
     match = re.search(pattern, str(text))
     if match is None:
@@ -122,8 +129,13 @@ def stage(text, true_groupstages):
     else:
         #find closest matched stage
         group1 = mapMostSimilar(match.group(1), true_groupstages)
-        map_zero = {'o':'0','O':'0', '0':'0'}
-        comb2 = map_zero[match.group(2)] + '-' + map_zero[match.group(3)]
+        map_zero = {char : '0' for char in 'oO'}
+        comb2 = match.group(2).translate(map_zero) + '-' + match.group(3).translate(map_zero)
+
+        # print("mapped: ", group1, "; Combined:", comb2)
+        final = group1 + " "+ comb2
+        if final is None:
+            print("Final is None?", final)
         return group1 + " "+ comb2
 
 #hp return integer
@@ -136,7 +148,7 @@ def hp(text):
     
     punc_pattern = r'\W'
     # Remove all punctuation
-    no_punc = re.sub(punc_pattern, '', text).strip().lower() #remove white space, convert to lower
+    no_punc = re.sub(punc_pattern, '', str(text)).strip().lower() #remove white space, convert to lower
 
     zero_ready = subZeros(no_punc)
     one_ready = subOnes(zero_ready)
@@ -161,7 +173,7 @@ def hp(text):
 def split_stage(df, t0_score_header, t1_score_header):
     #first split
     try:
-        df[['Stage', 'Stage_Scores']] = df['Stage'].str.split(' ', n = 1, expand=True)
+        df[['Stage', 'Stage_Scores']] = df['Stage'].str.split(r' ', n = 1, expand=True)
     except:
         logging.error("split_stage Failed: unable to split Stage into 3; probably because group is too small")
         return False
@@ -170,7 +182,7 @@ def split_stage(df, t0_score_header, t1_score_header):
     #Move column
     for col_name in [t1_score_header, t1_score_header]:
         col = df.pop(col_name)
-        df.insert(2, col_name, pd.to_numeric(col)) #converted to integer
+        df.insert(2, col_name, pd.to_numeric(col, errors='coerce')) #converted to integer
         setCol2Mode(df, [col_name])
     #dropping the Stage_Scores
     df.drop('Stage_Scores', axis = 1, inplace = True)

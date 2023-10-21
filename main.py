@@ -1,6 +1,4 @@
-from utils import *
-from hp_utils import *
-from time_utils import *
+from clean_video import *
 from truncate_utils import *
 
 #adding command line running capbility
@@ -44,20 +42,6 @@ else:
 #init info dataframe
 df_info = pd.read_csv(path_info)
 
-#CONSTANTS
-ALL_MAP_NAME = ["inferno", 'mirage', 'nuke', 'overpass', 'vertigo', 'ancient', 'anubis', 'dust ii', 'train', 'cache']
-ALL_TEAM_NAME =  list(df_info['Team'])
-ALL_GROUP_STAGE = list(df_info['From'].unique())
-ALL_BO = ["BO1", "BO3"]
-
-#NEW HEADERS
-T0_MAP_SCORE = 'Team0_Map_Score'
-T1_MAP_SCORE = 'Team1_Map_Score'
-
-ROUND_TIME = 'Ingame_Time_Left'
-BOMB_TIME = 'Ingame_Bomb_Time'
-INGAME_TIME_PASSED = 'Ingame_Time_Passed'
-
 if __name__ == "__main__":
     #csv names
     CSV_TEXT = "/audio_text_analysis.csv"
@@ -66,100 +50,26 @@ if __name__ == "__main__":
 
     #brows immediate sub directories
     gen_sub = (os.walk(dir_src))
-    gen_sub.__next__() #skiping first
+    gen_sub.__next__() #skiping root
     for x in gen_sub: 
-        name_dataset = x[0]
+        path2data = x[0]
+        path_out = dir_out + path2data[path2data.rindex('/'):]
+
+        #init logger
+        init_log(log_name = path_out + ".log")
+
         #reading
-        df_text = pd.read_csv(name_dataset + CSV_TEXT)
-        df_video = pd.read_csv(name_dataset + CSV_VIDEO)
-        df_audio = pd.read_csv(name_dataset + CSV_AUDIO)
+        df_text = pd.read_csv(path2data + CSV_TEXT)
+        df_video = pd.read_csv(path2data + CSV_VIDEO)
+        df_audio = pd.read_csv(path2data + CSV_AUDIO)
 
-        truncateAll(df_text, df_audio, df_video)
-"""
-#Constants
-# path_analysis = "E:\dev\Python\CS_Twitch\\video_analysis.csv"
-# path_info = "E:\dev\Python\CS_Twitch\\basic_information.csv"
+        #clean data
+        df_video = cleanVideoDf(df_video, df_info)
 
-path_analysis = "/Users/tianyaoh/Desktop/dev/CS_Twitch/Brandeis_Twitch_RA/video_analysis.csv"
-path_info = "/Users/tianyaoh/Desktop/dev/CS_Twitch/Brandeis_Twitch_RA/basic_information.csv"
+        # all = truncateAndCombineAll(df_text, df_audio, df_video, path2data)
+        #write to csv
+        # all.to_csv(path_out + ".csv", index = False)
+        df_video.to_csv(path_out + ".csv", index = False)
 
-#init loggers
-file_name = path_analysis[path_analysis.rindex('/')+1:-4]
-init_log(log_name = file_name + ".log")
-
-#read csv to pd.dataframe
-df_analysis = pd.read_csv(path_analysis)
-
-#REMOVING UNUSED ROWS
-df_analysis = df_analysis[df_analysis['Stage'].notnull()]
-
-
-if __name__ == "__main__":
-    df_result = None
-    MINIMUM_ROW_PER_GROUP = 3
-
-    #Headers
-    HP_HEADERS = ['Player_HP_'+str(i) for i in range(10)]
-
-    #Main loop to change each group
-    insertTimers(df_analysis, [BOMB_TIME, INGAME_TIME_PASSED])
-    insertMapScores(df_analysis, [T1_MAP_SCORE, T0_MAP_SCORE])
-
-    for i, group in groupDf(df = df_analysis):
-        #Set Round Scores
-        setCol2Mode(group, ['Score_0', 'Score_1'])
-
-        print(f'Group {i}:')
-        #map raw to clean counter part
-        fix_col_with_replace(group, ["Map"], ALL_MAP_NAME, True)
-        fix_col_with_replace(group, ["Team_0", "Team_1"], ALL_TEAM_NAME, True)
-        fix_col_with_replace(group, ["BO"], ALL_BO, True)
-        #format cleaning
-        fix_col_with_fun(group, ['Stage'], lambda x: stage(x, ALL_GROUP_STAGE))
-        fix_col_with_fun(group, [ROUND_TIME], time)
-        fix_col_with_fun(group, HP_HEADERS, hp)
-        
-        #Coercily convert all HP to numeric
-        #   - to counter cases where strings are in HP fields
-        convertCols2Numeric(group, HP_HEADERS, _errors = 'coerce')
-        bfillCols(group, HP_HEADERS)
-
-        #Special Cleaning:
-        #set stage to mode
-        setCol2Mode(group, ['Stage'])
-        #  - spliting  stage into multiple col
-        split_success = split_stage(group, t0_score_header = T0_MAP_SCORE, t1_score_header=T1_MAP_SCORE)
-
-        #Fix Time
-        #First modify
-        cleanInGameTime(group, ROUND_TIME, BOMB_TIME)
-
-        # printFull(group[ROUND_TIME])
-
-        #Fix HP
-        #  - ensuring that all hp is in descending order
-        ensureColsDesend(group, HP_HEADERS)
-
-        #update
-        df_analysis.update(group)
-        print("group updated")
-
-        #NYI removing group with failed split
-        if split_success:
-            #update map type
-            ls_2int = [ROUND_TIME, BOMB_TIME, T1_MAP_SCORE, T0_MAP_SCORE, 'Score_0', 'Score_1']
-            convertCols2Numeric(df_analysis, ls_2int, _errors = 'coerce')
-        else:
-            print("STAGE_SPLIT Failed: because stage is not recognizable\n - dropping group index: ", group.index)
-            df_analysis.drop(group.index, inplace = True)
-
-        # if i >3:
-        #     break
-
-    #convert hp to int type
-    convertCols2Numeric(df_analysis, HP_HEADERS)
-    # print(df_analysis.dtypes)
-    #write to csv
-    df_analysis.to_excel(file_name + "_CLEAN.xlsx", index = False)
-
-    """
+        print(path2data, "finished")
+        break

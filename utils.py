@@ -189,12 +189,12 @@ def hp(text):
         return 100
     
     #drop all letters
-    only_letters = re.sub('[a-z]','', one_ready)[:2]
-    if len(only_letters) == 0:
+    only_digits = re.findall(r'\d', one_ready)
+    only_digits = ''.join(only_digits)[:2]
+    if len(only_digits) == 0:
         int_hp = np.nan
     else:
-        int_hp = int(only_letters[:2])
-
+        int_hp = int(only_digits[:2])
     
     #if digits are greater than 100, remove the last digit
     if int_hp > 100:

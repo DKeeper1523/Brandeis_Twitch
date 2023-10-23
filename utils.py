@@ -59,8 +59,7 @@ def fillNaCols(df, ls_header, bfill = True, fFill = False):
             df[h].bfill(inplace=True)
 
 def convertCols2Numeric(df, ls_header, _errors = 'ignore'):
-    for h in ls_header:
-        df.loc[:, h] = pd.to_numeric(df[h], errors= _errors, downcast='integer')
+    df.loc[:,ls_header] = df.loc[:,ls_header].apply(lambda dataframe: pd.to_numeric(dataframe, errors= _errors, downcast='integer'))
 
 def groupDf(df):
     def _group_consec_int(ints):

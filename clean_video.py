@@ -75,7 +75,7 @@ def cleanVideoDf(df_video, df_info):
             fixBO3(group)
 
             #  - spliting stage into multiple col
-            split_success = split_stage(group, t0_score_header = T0_MAP_SCORE, t1_score_header=T1_MAP_SCORE)
+            split_stage(group, t0_score_header = T0_MAP_SCORE, t1_score_header=T1_MAP_SCORE)
 
             #Fix Time - need to fix time before
             cleanInGameTime(group, ROUND_TIME, BOMB_TIME)

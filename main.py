@@ -16,6 +16,8 @@ parser.add_argument(dest='path_csv_info', type=str, help="CSV containing basic i
 parser.add_argument('-out', type=str, help="directory for storing cleaned video data")
 # parser.add_argument(dest='info', type=str, help="Directory containing video analysis folder")
 
+#Run with: python Brandeis_Twitch_RA/main.py rawdata Brandeis_Twitch_RA/basic_information.csv -out clean
+
 # Parse and print the results
 args = parser.parse_args()
 
@@ -66,10 +68,10 @@ if __name__ == "__main__":
         #clean data
         df_video = cleanVideoDf(df_video, df_info)
 
-        # all = truncateAndCombineAll(df_text, df_audio, df_video, path2data)
+        all = truncateAndCombineAll(df_text, df_audio, df_video, path2data)
         #write to csv
-        # all.to_csv(path_out + ".csv", index = False)
-        df_video.to_csv(path_out + ".csv", index = False)
+        all.to_csv(path_out + ".csv", index = True)
+        # df_video.to_csv(path_out + ".csv", index = False)
 
         print(path2data, "finished")
-        break
+        # break

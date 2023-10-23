@@ -3,6 +3,11 @@ import numpy as np
 from utils import printFull
 from collections import Counter
 
+#Time starter
+START_PAST_TIME = 5
+#setting round time
+MAX_ROUND_TIME = 115 #2 minute per round
+
 def convertCols2DateTime(df, ls_header, _errors = 'ignore'):
     for h in ls_header:
         df[h] = pd.to_datetime(df[h], errors= _errors)
@@ -22,27 +27,31 @@ def fillBombeTimer(df, header_time, header_bomb_header):
         #update original dataframe's bombtimer
         df[header_bomb_header].update(series_na)
 
+def resetHP(df, row_indices, hp_headers = ['Player_HP_'+str(i) for i in range(10)]):
+    # ALL_HUNDRED = {hp:100 for hp in hp_headers}
+    # for row in row_indices:
+    if len(row_indices) > 0:
+        df.loc[row_indices, hp_headers] = 100
+        print("Hp set to 100 :", row_indices)
+
 def cleanInGameTime(df, header_ingame_time, header_bombtime):
     #previous function has already turned time from "1:40" to "1.40"
     #this lambda turn float "1.40" 1 min andd 40 sec to "100" int sec
     strSec2TrueSec = lambda int_str_sec: 60 * (int_str_sec//100) + (int_str_sec%100)
     #scaling by 100 from 1.40 to 140, meaning 1min and 40 secs
     df[header_ingame_time]  = pd.to_numeric(df[header_ingame_time], errors= 'coerce') * 100
-    float_time  = df[header_ingame_time].apply(strSec2TrueSec) #converting 140 (1m40s) to 90sec
-    df[header_ingame_time] = float_time
+    time_sec  = df[header_ingame_time].apply(strSec2TrueSec) #converting 140 (1m40s) to 90sec
+    df[header_ingame_time] = time_sec
     
     #fill bomb timer
     fillBombeTimer(df, header_ingame_time, header_bombtime)
-
-    #setting round time
-    MAX_ROUND_TIME = 115 #2 minute per round
 
     def _setReasonableRange(df, threshhold_max, step = -1, bool_get = False):
         index_rational_max = df[df <= threshhold_max].idxmax()
         index_last_valid = df.last_valid_index()
         #find the highest in game time recognized
         rational_max = int(df[index_rational_max])
-        #create assumed true range to fix time
+        #create assumed true range to fix round time
         round_time_range = df[pd.RangeIndex(index_rational_max, index_last_valid)]
         #create new round times
         round_time_range = pd.Series(range(rational_max, rational_max-len(round_time_range), step))
@@ -55,36 +64,60 @@ def cleanInGameTime(df, header_ingame_time, header_bombtime):
             return index_rational_max
 
     #check for empty
-    if len(float_time[float_time <= MAX_ROUND_TIME]) > 0:
-        #try guess the round time range
+    if len(time_sec[time_sec <= MAX_ROUND_TIME]) > 0:
+        #try guess the time range of the round  
         index_rational_max = _setReasonableRange(df[header_ingame_time], MAX_ROUND_TIME)
-        #0 check to avoid -1 indexing
-        if index_rational_max > 0:
-            prep_index = df[header_ingame_time].index
-            prep_index = prep_index[prep_index < index_rational_max]
-            #get everything before rational max
-            before_rational_max = df[header_ingame_time][prep_index]
-            #if everything before rational max is above prep max; most-likely everything is recognition error
-            PREP_MAX=20
-            all_big_error = all(before_rational_max>PREP_MAX)
-            #extend rational max out
-            if all_big_error:
-                cur_max = df[header_ingame_time][index_rational_max]
-                new_prep = pd.Series(range(len(before_rational_max), 0, -1)) + cur_max
-            else:
-                # get range guess
-                new_prep = pd.Series(range(len(before_rational_max), 0, -1))
-            #reset hp
-            resetHP(df, prep_index)
-            #Set new prep
-            # _printFull(new_prep, "guess_prep")
-            # df[header_ingame_time][prep_index]= new_prep
-            df.loc[prep_index, header_ingame_time].update(new_prep)
-            # _printFull(df[header_ingame_time], "New Prep")
+        cur_max = df[header_ingame_time][index_rational_max]
 
-def resetHP(df, row_indices, hp_headers = ['Player_HP_'+str(i) for i in range(10)]):
-    # ALL_HUNDRED = {hp:100 for hp in hp_headers}
-    # for row in row_indices:
-    if len(row_indices) > 0:
-        df.loc[row_indices, hp_headers] = 100
-        print("Has resetted hp on :", row_indices)
+        #get round prep
+        prep_index = df[header_ingame_time].index
+        prep_index = prep_index[prep_index < index_rational_max]
+        #if there is any prep index before prep index
+        if len(prep_index) > 0:
+            #if cur max is not 115
+            missing_roundtime = pd.Series(range(int(cur_max), MAX_ROUND_TIME)) + 1
+            freeze_time = pd.Series(range(len(prep_index) - len(missing_roundtime))) + 1
+            complete_prep = pd.concat([missing_roundtime, freeze_time], ignore_index=True)[::-1]
+            #truncate excess
+            complete_prep = complete_prep[-len(prep_index):]
+            #set new prep index
+            try:
+                complete_prep.index = prep_index
+
+            except:
+                print(complete_prep, prep_index)
+                printFull(df[header_ingame_time].head(10))
+                raise Exception("len(complete_prep), len(prep_index)", len(complete_prep), len(prep_index))
+
+            #reset hp along prep rows
+            resetHP(df, prep_index)
+            # df[header_ingame_time][prep_index]= new_prep
+            df.loc[prep_index, header_ingame_time] = complete_prep
+
+                
+def setIngameTimePast(df, header_round_time, header_ingame_time_past, headers_mustBeNumeric):
+    #Time starter
+    START_PAST_TIME = 5
+    #get maximum from round time
+    _offset = lambda cur_max: START_PAST_TIME + MAX_ROUND_TIME - cur_max
+    #skipping df that is entirely empty
+    if not df[header_round_time].isnull().all():
+        #get needed indexes
+        index_max_round_time = df[header_round_time].idxmax()
+        first_index = df.index[0]
+
+        #initial value
+        seed = int(_offset(df[header_round_time][index_max_round_time]))
+        #translate seed from cur max to the begining
+        normal_index_max = index_max_round_time - first_index
+        seed -= (normal_index_max)
+        time_past = pd.Series(range(seed, seed + len(df)))
+        time_past.index = df.index
+
+        #update time past ingame
+        df[header_ingame_time_past].update(time_past)
+
+        place_holder = ''
+        df.loc[df[header_ingame_time_past] < 0, ~df.columns.isin(headers_mustBeNumeric)] = place_holder
+        df.replace(place_holder, np.nan)
+

@@ -31,12 +31,32 @@ def _insertEmptyColumns(df, ls_col_name, i_insert, _dtype):
         print("inserted ", col_name)
         df.insert(loc = i_insert, column = col_name, value = pd.Series(dtype = _dtype))
 
+def addStageSepIfNoneExist(df):
+    _addSpace = lambda txt, index = -3: txt[:index] + " " + txt[index:]
+    
+    df['Stage'] = df['Stage'].apply(str.strip)#.apply(_show)
+    no_space = ~(df['Stage'].str.contains(r'\s', regex = True))
+    df.loc[no_space, 'Stage'] = df.loc[no_space, 'Stage'].apply(_addSpace)
+
+
+def fixBO1Stage(df):
+    # BO is BO1 and stage has no digit
+    bo1 = (df['BO'] == 'BO1')
+    no_digit = ~(df['Stage'].str.contains(r'\d', regex = True))
+    zero_zero = " 0-0"
+    df.loc[ bo1&no_digit, 'Stage'] = df.loc[ bo1&no_digit, 'Stage'] + zero_zero
+
+def fixBO3(df):
+    no_zero = df['Stage'].str.contains(r'[1-9]', regex = True)
+    no_zero.fillna(False, inplace = True)
+    df.loc[no_zero, 'BO'] = 'BO3'
+
 def fillNaCols(df, ls_header, bfill = True, fFill = False):
     for h in ls_header:
-        if bfill:
-            df[h].bfill(inplace=True)
         if fFill:
             df[h].ffill(inplace=True)
+        if bfill:
+            df[h].bfill(inplace=True)
 
 def convertCols2Numeric(df, ls_header, _errors = 'ignore'):
     for h in ls_header:
@@ -117,10 +137,25 @@ def time(txt):
     return formatted
 
 # #Fix Stage
+#NEW HEADERS
+T0_MAP_SCORE = 'Team0_Map_Score'
+T1_MAP_SCORE = 'Team1_Map_Score'
 def stage(text, true_groupstages):
+    map_zero = {char : '0' for char in 'oO'}
+    map_one = {char: '1' for char in 'Ii'}
+    map_two = {char: '2' for char in 'Zz?7'}
+
+    combined = {}
+    for x in [map_zero, map_one, map_two]:
+        combined.update(x)
     #strip white space
-    text = text.strip().lower()
-    pattern = r'(\S+\s?)([\d|o|O])\s?\W?\s?([\d|o|O])'
+    text = text.strip().lower().translate(combined)
+    # Assuming missing the seprating space between stage and score 
+    # check if there is no space within, if not, add one
+    if ' ' not in text:
+        index_sep = text.index('-')-1 if '-' in text else -3
+        text = text[:index_sep] + " " + text[index_sep:]
+    pattern = r'(\S+\s)([\d|o|O])\s?\W?\s?([\d|o|O])'
     match = re.search(pattern, str(text))
     if match is None:
         logging.error("[mapMostSimilar Failed]: <'Stage'> Unable to convert \'" + text + "\' to appropriate format like \'LEGEND 0-0\'")
@@ -129,14 +164,9 @@ def stage(text, true_groupstages):
     else:
         #find closest matched stage
         group1 = mapMostSimilar(match.group(1), true_groupstages)
-        map_zero = {char : '0' for char in 'oO'}
-        comb2 = match.group(2).translate(map_zero) + '-' + match.group(3).translate(map_zero)
+        comb2 = match.group(2) + '-' + match.group(3)
 
-        # print("mapped: ", group1, "; Combined:", comb2)
-        final = group1 + " "+ comb2
-        if final is None:
-            print("Final is None?", final)
-        return group1 + " "+ comb2
+        return group1.capitalize() + " "+ comb2
 
 #hp return integer
 def hp(text):
@@ -160,30 +190,37 @@ def hp(text):
         return 100
     
     #drop all letters
-    try:
-        only_digits = int(re.sub('[a-z]','', one_ready)[:2])
-        #if digits are greater than 100, remove the last digit
-        if only_digits > 100:
-            only_digits = only_digits//10
-        return only_digits
-    except:
-        logging.error("<HP> Unable to convert \'" + text + "\' to appropriate hp integer \'[0-100]\'")
+    only_letters = re.sub('[a-z]','', one_ready)[:2]
+    if len(only_letters) == 0:
+        int_hp = np.nan
+    else:
+        int_hp = int(only_letters[:2])
+
+    
+    #if digits are greater than 100, remove the last digit
+    if int_hp > 100:
+        int_hp = int_hp//10
+    return int_hp
 
 #splitting stage into three different columns
 def split_stage(df, t0_score_header, t1_score_header):
-    #first split
-    try:
-        df[['Stage', 'Stage_Scores']] = df['Stage'].str.split(r' ', n = 1, expand=True)
-    except:
-        logging.error("split_stage Failed: unable to split Stage into 3; probably because group is too small")
+    if df['Stage'].isna().all():
         return False
-    #second split
-    df[[t1_score_header, t0_score_header]] = df['Stage_Scores'].str.split('-', n = 1, expand = True)
-    #Move column
-    for col_name in [t1_score_header, t1_score_header]:
-        col = df.pop(col_name)
-        df.insert(2, col_name, pd.to_numeric(col, errors='coerce')) #converted to integer
-        setCol2Mode(df, [col_name])
-    #dropping the Stage_Scores
-    df.drop('Stage_Scores', axis = 1, inplace = True)
-    return True
+    else:
+        #first split
+        try:
+            #           Here n=1 allows for split when cell is NA
+            df[['Stage', 'Stage_Scores']] = df['Stage'].str.split(' ', n=1, expand=True)
+        except:
+            logging.error("split_stage Failed: unable to split Stage (", str(df['Stage']) ,") into 3; probably because group is too small")
+        #     return False
+        #second split
+        df[[t1_score_header, t0_score_header]] = df['Stage_Scores'].str.split('-', n = 1, expand = True)
+        #Move column
+        for col_name in [t1_score_header, t1_score_header]:
+            col = df.pop(col_name)
+            df.insert(2, col_name, pd.to_numeric(col, errors='coerce')) #converted to integer
+            setCol2Mode(df, [col_name])
+        #dropping the Stage_Scores
+        df.drop('Stage_Scores', axis = 1, inplace = True)
+        return True

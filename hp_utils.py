@@ -26,7 +26,12 @@ import pandas as pd
 #               NOT: [7, 10, 7, 10, 0, 10, 0, 0, 0, 0]
 #      BUT Actually: [7, 10, 7, 10, 0, 10, [0, 0, 0, 0]]
 #                                           ^^^^^^^^^^^<- this is one group
-def ensureColsDesend(df, ls_hp):
+def ensureColsOrder(df, ls_hp, order = 'descend'):
+    dict_order = {
+        'descend' : lambda x1, x2: x1 < x2,
+        'ascend' : lambda x1, x2: x1 > x2
+    }
+    _compare = dict_order[order]
     def _setN2P(index_n, value_n, value_p, window):
         window[index_n].replace(value_n, value_p, inplace = True)
 
@@ -37,7 +42,7 @@ def ensureColsDesend(df, ls_hp):
         window = [0, 0, 0]
         # print("RESET WINDOW")
         i = 0
-        groups = df[hp].groupby([(df[hp] != df[hp].shift()).cumsum()])
+        groups = df[hp].groupby([(df[hp] != df[hp].shift( )).cumsum()])
         for nth, gp in groups:
             # print("This is ", nth, "th group:")
             i_left = (i-2)%3
@@ -62,11 +67,12 @@ def ensureColsDesend(df, ls_hp):
                 #check if window is not in descending order sorted
                 #   -preserving from left to right
                 elif sorted(v_window, reverse=True) != v_window:
-                    #left < center
-                    if left < center:
+                    #decsending order: left < center
+                    # if left < center:
+                    if _compare(left, center):
                         _setN2P(i_center, center, left, window)
                         center = left
-                    if center < right:
+                    if _compare(center, right):
                         _setN2P(i_right, right, center, window)
                         right = center
                 else:
@@ -125,6 +131,6 @@ if __name__ == "__main__":
     
     LS_HP = ["HP" + str(x) for x in range(1, 7)]
 
-    ensureColsDesend(data, LS_HP)
+    ensureColsOrder(data, LS_HP)
 
     print(data)

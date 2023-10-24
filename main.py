@@ -66,7 +66,7 @@ if __name__ == "__main__":
         df_audio = pd.read_csv(path2data + CSV_AUDIO)
 
         #clean data
-        # df_video = cleanVideoDf(df_video, df_info)
+        df_video = cleanVideoDf(df_video, df_info) 
 
         all = truncateAndCombineAll(df_text, df_audio, df_video, path2data)
         #write to csv

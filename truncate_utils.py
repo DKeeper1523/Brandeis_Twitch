@@ -1,5 +1,6 @@
 import pandas as pd
 import numpy as np
+from utils import printFull
 import logging
 
 def truncateAndCombineAll(df_text, df_audio, df_video, file_name):
@@ -13,10 +14,13 @@ def truncateAndCombineAll(df_text, df_audio, df_video, file_name):
     df_audio = df_audio.iloc[:min_len, 1:]
     df_video = df_video.iloc[:min_len, 1:]
     df_text = df_text.iloc[:min_len, 1:]
-    # print("text:", len(df_text), "audio", len(df_audio), "video", len(df_video))
+
+    print("text:", len(df_text), "audio", len(df_audio), "video", len(df_video), "min len", min_len)
     #concatenate
-    combined = pd.concat([df_video, df_audio, df_text])
-    return combined
+    combined = pd.concat([df_video, df_audio, df_text], axis=1)
+
+    print("len(combined)", len(combined))
+    return combined.iloc[:min_len:, :] 
 
 def truncateAudio(df_audio, num_split = 5):
     audio_step = len(df_audio)//num_split
@@ -27,9 +31,9 @@ def truncateAudio(df_audio, num_split = 5):
     for i in range(audio_step, len(df_audio), audio_step):
         if flag in FLAG_INDEX:
             logging.info("Audio dropping row#: "+str(i))
-            df_audio.drop(i, inplace=True)
+            df_audio = df_audio.drop(i)
         flag += 1
 
 def truncateVideo(df_video, step = 1000):
     indicies2drop = range(step-1, len(df_video), step)
-    df_video.drop(pd.Index(indicies2drop), axis=0, inplace=True)
+    df_video = df_video.drop(pd.Index(indicies2drop), axis=0, inplace=True)

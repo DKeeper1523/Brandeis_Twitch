@@ -67,13 +67,11 @@ if __name__ == "__main__":
         df_audio = pd.read_csv(path2data + CSV_AUDIO)
 
         #clean data
-        # df_video = cleanVideoDf(df_video, df_info) 
+        df_video = cleanVideoDf(df_video, df_info) 
+        # df_video.to_csv(path_out + ".csv", index = False)
 
         all = truncateAndCombineAll(df_text, df_audio, df_video)
         #write to csv
-        if all is not None:
-            all.to_csv(path_out + ".csv", index = True, index_label="Time_Stamp")
-        # df_video.to_csv(path_out + ".csv", index = False)
+        all.to_csv(path_out + ".csv", index = True, index_label="Time_Stamp")
 
         print(path2data, "finished")
-        break

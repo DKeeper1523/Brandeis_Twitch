@@ -52,7 +52,8 @@ def cleanVideoDf(df_video, df_info, min_row_per_group):
             
             #cleaning stage
             fixBO1Stage(group)
-            addStageSepIfNoneExist(group)
+            addStageSep(group)
+
             #fix bo
             setCol2Mode(group, ['BO'])
             # printFull(group.loc[:, ['Stage', 'BO']].head(5), 'head')
@@ -82,7 +83,7 @@ def cleanVideoDf(df_video, df_info, min_row_per_group):
             #set time past ingmae
             #convert numeric, ensure type is safe for HP fix
             ls_2int = [ROUND_TIME, BOMB_TIME, T1_MAP_SCORE, T0_MAP_SCORE, 'Score_0', 'Score_1'] + HP_HEADERS
-            setIngameTimePast(group, ROUND_TIME, INGAME_TIME_PASSED, ls_2int)
+            setIngameTimePast(group, ROUND_TIME, INGAME_TIME_PASSED)
 
             #cast numberic types
             convertCols2Numeric(df_video, ls_2int, _errors = 'coerce')
@@ -92,9 +93,8 @@ def cleanVideoDf(df_video, df_info, min_row_per_group):
             ensureColsOrder(group, HP_HEADERS)
         
             #update
-            # final.update(group)
             final = pd.concat([final, group], axis=0)
             print("group updated")
 
         # print(df_video.dtypes)
-    return final
+    return final[final['Stage'].notnull()]

@@ -3,12 +3,20 @@ import numpy as np
 from utils import printFull
 import logging
 
+def unify_index(df_src, other_dfs):
+    indicies_src = df_src.index
+    for df in other_dfs:
+        df.loc[:, :] = df.loc[indicies_src, :]
+    #Unification is finish
+    print("Unification is finished")
+
 def truncateAndCombineAll(df_text, df_audio, df_video):
     truncateAudio(df_audio)
     # truncateVideo(df_video)
     #get the minimal length
     min_len = min([len(x) for x in [df_video, df_audio, df_text]])
 
+    #remove original indices
     df_audio = df_audio.iloc[:, 1:]
     df_video = df_video.iloc[:, 1:]
     df_text = df_text.iloc[:, 1:]

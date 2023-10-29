@@ -103,19 +103,6 @@ def ensureColsOrder(df, ls_hp, order = 'descend'):
         df[hp] = new[hp]
     # print("Below is updated\n ", new.tail(20), "\n Updated is finished\n ", df.tail(20))
 
-
-# def adjModeClean(df, ls_hp, window = 4):
-#     for hp in ls_hp:
-#         df[hp] = df[hp].rolling(window, min_periods=1, closed = 'both').apply(lambda x: mode(x))
-     
-# def brute_force_hp_replace(df, ls_hp):
-#     for hp in ls_hp:
-#         # Create a mask for rows where the current value is 70 and the previous and next values are 100
-#         mask1 = (df[hp] == 70) & (df[hp].shift(-1) == 100) & (df[hp].shift() == 100)
-#         mask2 = (df[hp] == 70) & (df[hp].shift(-1) == 70)& (df[hp].shift(-2) == 100) & (df[hp].shift() == 100)
-#         mask3 = (df[hp] == 70) & (df[hp].shift(-1) == 100)& (df[hp].shift(2) == 100) & (df[hp].shift() == 70)# Update the values in the DataFrame based on the mask
-#         df.loc[mask1|mask2|mask2, hp] = 100
-
 #For testing purposes:
 if __name__ == "__main__":
     data = {

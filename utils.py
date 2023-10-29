@@ -9,6 +9,13 @@ import logging
 STAGE_NAME = "Stage"
 T_STAMP = "Timestamp"
 
+#init needed lambda's
+#S2 here is a single 
+subS1WithS2 = lambda s1, s2, txt, toLower = False: re.sub(r'[' + re.escape(s1) + ']', s2, txt) if toLower == False else re.sub('|'.join([*s1]), s2, txt.lower())
+subZeros = lambda string, zero_target = 'oOu', toLower = False: subS1WithS2(zero_target,'0', string, toLower) 
+subOnes = lambda string, one_target = 'ji', toLower = False: subS1WithS2(one_target,'1', string, toLower) 
+subTwos = lambda string, two_target = 'z', toLower = False: subS1WithS2(two_target,'2', string, toLower) 
+
 def printFull(df, NAME_DF = ""):
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
         print("PRINTING FULL " + NAME_DF + ": \n", df)
@@ -31,18 +38,17 @@ def _insertEmptyColumns(df, ls_col_name, i_insert, _dtype):
         print("inserted ", col_name)
         df.insert(loc = i_insert, column = col_name, value = pd.Series(dtype = _dtype))
 
-def addStageSepIfNoneExist(df):
+def addStageSep(df):
     _addSpace = lambda txt, index = -3: txt[:index] + " " + txt[index:]
-    
-    df['Stage'] = df['Stage'].apply(str.strip)#.apply(_show)
-    no_space = ~(df['Stage'].str.contains(r'\s', regex = True))
-    df.loc[no_space, 'Stage'] = df.loc[no_space, 'Stage'].apply(_addSpace)
+    #remove all space then add the space in the right place
+    # df.loc[:,'Stage'] = df.Stage.str.replace(r'\s', '').apply(_addSpace)
+    df.loc[:,'Stage'] = df.Stage.apply(lambda x: re.sub(r'\s+', '', x)).apply(_addSpace)
 
 
 def fixBO1Stage(df):
     # BO is BO1 and stage has no digit
     bo1 = (df['BO'] == 'BO1')
-    no_digit = ~(df['Stage'].str.contains(r'\d', regex = True))
+    no_digit = ~(df['Stage'].str.contains(r'\d|-|\s', regex = True))
     zero_zero = " 0-0"
     df.loc[ bo1&no_digit, 'Stage'] = df.loc[ bo1&no_digit, 'Stage'] + zero_zero
 
@@ -109,22 +115,19 @@ def setCol2Mode(df, ls_col):
     for col in ls_col:
         try:
             mode = df[col].mode()[0]
+            if mode == "":
+                logging.warn("mode is empty string")
         except:
             logging.error("unable to find mode in group")
             return
-        df[col] = mode
+        df.loc[:, col] = mode
         #fill na
-        df[col].fillna(mode)
+        df[col].fillna(mode, inplace=True)
 
 #needs a function that operate on cell, so "func" needs to return a string
 def fix_col_with_fun(df, cols, func):
     for col_name in cols:
         df[col_name] = df[col_name].apply(func)
-
-#S2 here is a single 
-subS1WithS2 = lambda s1, s2, txt, toLower = False: re.sub('|'.join([*s1]), s2, txt) if toLower == False else re.sub('|'.join([*s1]), s2, txt.lower())
-subZeros = lambda string, zero_target = 'oOu', toLower = False: subS1WithS2(zero_target,'0', string, toLower) 
-subOnes = lambda string, one_target = 'ji', toLower = False: subS1WithS2(one_target,'1', string, toLower) 
 
 #To fix time
 #   - we are preparing to fix time: (1) convert everything to a float number, as they r ez
@@ -135,37 +138,32 @@ def time(txt):
     formatted = subChar(subOnes(subZeros(str(txt), toLower=True)))
     return formatted
 
-# #Fix Stage
-#NEW HEADERS
-T0_MAP_SCORE = 'Team0_Map_Score'
-T1_MAP_SCORE = 'Team1_Map_Score'
 def stage(text, true_groupstages):
-    map_zero = {char : '0' for char in 'oO'}
-    map_one = {char: '1' for char in 'Ii'}
-    map_two = {char: '2' for char in 'Zz?7'}
+    TARGETS_ONE = '!ije'
+    TARGETS_TWO = 'z?7s'
 
-    combined = {}
-    for x in [map_zero, map_one, map_two]:
-        combined.update(x)
     #strip white space
-    text = text.strip().lower().translate(combined)
-    # Assuming missing the seprating space between stage and score 
-    # check if there is no space within, if not, add one
-    if ' ' not in text:
-        index_sep = text.index('-')-1 if '-' in text else -3
-        text = text[:index_sep] + " " + text[index_sep:]
-    pattern = r'(\S+\s)([\d|o|O])\s?\W?\s?([\d|o|O])'
-    match = re.search(pattern, str(text))
+    no_space = text.strip().lower()
+    # pattern = r'(\S+)\s([\d|o|O])\s?\W?\s?([\d|o|O])'
+    pattern = r'(\S+)\s((.*))'
+
+    match = re.search(pattern, str(no_space))
     if match is None:
-        logging.error("[mapMostSimilar Failed]: <'Stage'> Unable to convert \'" + text + "\' to appropriate format like \'LEGEND 0-0\'")
-        #Here we can return a placeholder for unreadable Stage name
-        #return '[Unreadable stage]'
+        # logging.error("[stage() match-stage Failed]: <'Stage'> Unable to convert \'" + text + "\' to appropriate format like \'LEGEND 0-0\'")
+        print("[stage() match-stage Failed]: <'Stage'> Unable to convert \'" + text + "\' to appropriate format like \'LEGEND 0-0\'")
     else:
         #find closest matched stage
         group1 = mapMostSimilar(match.group(1), true_groupstages)
-        comb2 = match.group(2) + '-' + match.group(3)
-
-        return group1.capitalize() + " "+ comb2
+        scores = match.group(2).strip()
+        #replacing possibles for 0 and 1
+        scores = subTwos(subOnes(subZeros(scores), TARGETS_ONE), TARGETS_TWO)
+        #replace 2
+        scores = re.sub(TARGETS_TWO, '2', scores)
+        formatted = scores[0] + '-' + scores[-1]
+        if not scores[0].isdigit() or  not scores[0].isdigit():
+            print("WARNING: [stage() digit-recognition]: original text", text, " scores: ", scores[0] + ';' + scores[-1])
+            # logging.error("[stage() digit-recognition]: scores: ", scores)
+        return group1.capitalize() + " "+ formatted
 
 #hp return integer
 def hp(text):

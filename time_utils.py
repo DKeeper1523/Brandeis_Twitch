@@ -42,9 +42,6 @@ def cleanInGameTime(df, header_ingame_time, header_bombtime):
     df[header_ingame_time]  = pd.to_numeric(df[header_ingame_time], errors= 'coerce') * 100
     time_sec  = df[header_ingame_time].apply(strSec2TrueSec) #converting 140 (1m40s) to 90sec
     df[header_ingame_time] = time_sec
-    
-    #fill bomb timer
-    fillBombeTimer(df, header_ingame_time, header_bombtime)
 
     def _setReasonableRange(df, threshhold_max, step = -1, bool_get = False):
         index_rational_max = df[df <= threshhold_max].idxmax()
@@ -83,19 +80,24 @@ def cleanInGameTime(df, header_ingame_time, header_bombtime):
             #set new prep index
             try:
                 complete_prep.index = prep_index
-
             except:
                 print(complete_prep, prep_index)
                 printFull(df[header_ingame_time].head(10))
                 raise Exception("len(complete_prep), len(prep_index)", len(complete_prep), len(prep_index))
-
             #reset hp along prep rows
             resetHP(df, prep_index)
             # df[header_ingame_time][prep_index]= new_prep
             df.loc[prep_index, header_ingame_time] = complete_prep
 
+    #fill bomb timer
+    fillBombeTimer(df, header_ingame_time, header_bombtime)
+
+    #fix instances where bomb timer and round time both has number
+    dup_bombAndRound = df.Stage.isna() & df.Stage.isna()
+    df.loc[dup_bombAndRound, header_ingame_time] = None
+
                 
-def setIngameTimePast(df, header_round_time, header_ingame_time_past, headers_mustBeNumeric):
+def setIngameTimePast(df, header_round_time, header_ingame_time_past):
     #Time starter
     START_PAST_TIME = 5
     #get maximum from round time
@@ -117,7 +119,7 @@ def setIngameTimePast(df, header_round_time, header_ingame_time_past, headers_mu
         #update time past ingame
         df[header_ingame_time_past].update(time_past)
 
-        place_holder = ''
-        df.loc[df[header_ingame_time_past] < 0, ~df.columns.isin(headers_mustBeNumeric)] = place_holder
-        df.replace(place_holder, np.nan)
+        #remove everything that has a negative value in Time past in game
+        df.loc[:,:] = df.loc[df[header_ingame_time_past]>=0, :]
+
 

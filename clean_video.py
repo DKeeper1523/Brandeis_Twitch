@@ -1,6 +1,7 @@
 from utils import *
 from hp_utils import *
 from time_utils import *
+from truncate_utils import truncateVideo
 
 import numpy as np
 
@@ -16,13 +17,16 @@ ROUND_TIME = 'Ingame_Time_Left'
 BOMB_TIME = 'Ingame_Bomb_Time'
 INGAME_TIME_PASSED = 'Ingame_Time_Passed'
 
-def cleanVideoDf(df_video, df_info):
+def cleanVideoDf(df_video, df_info, min_row_per_group):
     #init dependent constant
     ALL_TEAM_NAME =  list(df_info['Team'])
     ALL_GROUP_STAGE = [x.lower() for x in df_info['From'].unique()]
 
-    #TESTUSE ONLY: REMOVING UNUSED ROWS
-    # df_video = df_video[df_video['Stage'].notnull()]
+    #remove every 1001 row
+    truncateVideo(df_video)
+
+    # REMOVING UNUSED ROWS
+    df_video = df_video[df_video['Stage'].notnull()]
 
     #Headers
     HP_HEADERS = ['Player_HP_'+str(i) for i in range(10)]
@@ -31,15 +35,11 @@ def cleanVideoDf(df_video, df_info):
     insertTimers(df_video, [BOMB_TIME, INGAME_TIME_PASSED])
     insertMapScores(df_video, [T1_MAP_SCORE, T0_MAP_SCORE])
 
-    #there are instances of very small group (<=3 row) has mis identified rows
-    MINIMUM_ROW_PER_GROUP = 3
+    #init final df
+    final = pd.DataFrame()
+
     for i, group in groupDf(df_video):
-        if len(group) <= MINIMUM_ROW_PER_GROUP:
-            #Erase everything, since it is too short to be a formal round
-            #   - most likely a replay on stream
-            group.iloc[:,:] = ""
-            df_video.update(group)
-        else:
+        if len(group) >= min_row_per_group:
             #Set Round Scores
             setCol2Mode(group, ['Score_0', 'Score_1'])
 
@@ -92,8 +92,9 @@ def cleanVideoDf(df_video, df_info):
             ensureColsOrder(group, HP_HEADERS)
         
             #update
-            df_video.update(group)
+            # final.update(group)
+            final = pd.concat([final, group], axis=0)
             print("group updated")
 
         # print(df_video.dtypes)
-    return df_video
+    return final

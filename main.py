@@ -15,7 +15,7 @@ parser.add_argument(dest='src', type=str, help="Looks under the current working 
 parser.add_argument(dest='path_csv_info', type=str, help="CSV containing basic infommation for team competing")
 parser.add_argument('-out', type=str, help="directory for storing cleaned video data")
 parser.add_argument('-l', '--log', action='store_true', help='Toggle logging')
-
+parser.add_argument('--thresh', type=int, nargs='?', const=30, help='minimum number row for in_game round')
 #Run with: python Brandeis_Twitch_RA/main.py rawdata Brandeis_Twitch_RA/basic_information.csv -out clean
 
 # Parse and print the results
@@ -23,6 +23,12 @@ args = parser.parse_args()
 
 #get dir_src
 dir_src = args.src
+#   - minimum # of row for ingame round in video
+DEFAULT_MIN_ROW = 30
+min_row = args.thresh if args.thresh is not None else DEFAULT_MIN_ROW #if thresh has specified value 
+print("MIIINININININ", args.thresh is not None)
+
+#check if current working directory has raw data folder
 if not os.path.exists(dir_src):
     raise Exception("cwd: ",os.getcwd(),"\n Current working directory does not contain raw data folder\n Make sure that raw data folder is under the current working directory")
 #get dir_out
@@ -67,7 +73,7 @@ if __name__ == "__main__":
         df_audio = pd.read_csv(path2data + CSV_AUDIO)
 
         #clean data
-        df_video = cleanVideoDf(df_video, df_info) 
+        df_video = cleanVideoDf(df_video, df_info, min_row) 
         # df_video.to_csv(path_out + ".csv", index = False)
 
         all = truncateAndCombineAll(df_text, df_audio, df_video)
@@ -75,3 +81,4 @@ if __name__ == "__main__":
         all.to_csv(path_out + ".csv", index = True, index_label="Time_Stamp")
 
         print(path2data, "finished")
+        break

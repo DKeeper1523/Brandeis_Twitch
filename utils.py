@@ -48,7 +48,7 @@ def addStageSep(df):
     _addSpace = lambda txt, index = -3: txt[:index] + " " + txt[index:]
     #remove all space then add the space in the right place
     # df.loc[:,'Stage'] = df.Stage.str.replace(r'\s', '').apply(_addSpace)
-    df.loc[:,'Stage'] = df.Stage.apply(lambda x: re.sub(r'\s+', '', x)).apply(_addSpace)
+    df.Stage.apply(lambda x: re.sub(r'\s+', '', x)).apply(_addSpace)
 
 
 def fixBO1Stage(df):
@@ -225,3 +225,5 @@ def split_stage(df, t0_score_header, t1_score_header):
         #dropping the Stage_Scores
         df.drop('Stage_Scores', axis = 1, inplace = True)
         return True
+
+

@@ -115,7 +115,8 @@ def main():
     pool.close()
     pool.join()
 
-    final = pd.concat(res, axis=0)
+    sorted_result = sorted(res, key= lambda df: df.Date[0] + df.Stream[0])
+    final = pd.concat(sorted_result, axis=0)
 
     cols = ['Stage','Map','Team_0', 'Team_1']
     possible_id = ((final[cols].shift() != final[cols]).any(axis=1)).cumsum()
@@ -133,7 +134,10 @@ if __name__ == "__main__":
     #brows immediate sub directories
     # gen_sub = list(os.walk(dir_members))[0][2] #unpack; only get sub files
 
-    # final = pd.concat([pd.read_csv(dir_members+'/'+path) for path in gen_sub if '.csv' in path], axis=0)
+    # ls_df = [pd.read_csv(dir_members+'/'+path) for path in gen_sub if '.csv' in path]
+
+    # sorted_df = sorted(ls_df, key= lambda df: df.Date[0] + df.Stream[0])
+    # final = pd.concat(sorted(ls_df, key= lambda df: df.Date[0]), axis=0)
 
     # cols = ['Stage','Map','Team_0', 'Team_1']
     # possible_id = ((final[cols].shift() != final[cols]).any(axis=1)).cumsum()

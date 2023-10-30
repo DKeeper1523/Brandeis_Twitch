@@ -6,7 +6,8 @@ import logging
 def unify_index(df_src, other_dfs):
     indicies_src = df_src.index
     for df in other_dfs:
-        df.loc[:, :] = df.loc[indicies_src, :]
+        including_index = df.index[df.index.isin(indicies_src)]
+        df.loc[:, :] = df.loc[including_index, :]
     #Unification is finish
     # print("Unification is finished")
 

@@ -72,7 +72,7 @@ def cleanInGameTime(df, header_ingame_time, header_bombtime):
         #if there is any prep index before prep index
         if len(prep_index) > 0:
             #if cur max is not 115
-            missing_roundtime = pd.Series(range(int(cur_max), MAX_ROUND_TIME)) + 1
+            missing_roundtime = pd.Series(range(int(cur_max), MAX_ROUND_TIME), dtype=int) + 1
             freeze_time = pd.Series(range(len(prep_index) - len(missing_roundtime))) + 1
             complete_prep = pd.concat([missing_roundtime, freeze_time], ignore_index=True)[::-1]
             #truncate excess

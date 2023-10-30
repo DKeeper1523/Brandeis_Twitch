@@ -4,7 +4,10 @@ from truncate_utils import *
 #adding command line running capbility
 import argparse
 import os
+import time
 from tqdm.auto import tqdm
+from multiprocessing import Pool, current_process
+from functools import partial
 
 # Create the parser and add arguments
 parser = argparse.ArgumentParser(
@@ -41,11 +44,10 @@ def createDirIfMissing(path_dir):
 # get all dir needed
 dir_root = 'clean_data'if args.out is None else args.out
 dir_members = dir_root + '/members'
-dir_combined = dir_root + '/combined'
+path_csv_alldata = dir_root + '/all_data.csv'
 #Create Dir needed for clean data
 createDirIfMissing(dir_root)
 createDirIfMissing(dir_members)
-createDirIfMissing(dir_combined)
 
 #Get df_info
 path_info = args.path_csv_info
@@ -58,50 +60,83 @@ else:
 #init info dataframe
 df_info = pd.read_csv(path_info)
 
-if __name__ == "__main__":
+def cleanAndMerge(name_sub):
     #csv names
     CSV_TEXT = "/audio_text_analysis.csv"
     CSV_VIDEO = "/video_analysis.csv"
     CSV_AUDIO = "/audio_analysis.csv"
+    
+    path2data = dir_src + '/' + name_sub
+    path_out = dir_members + '/' + name_sub
+
+    #init logger
+    if args.log:
+        path_log = dir_members + '/log' 
+        createDirIfMissing(path_log)
+        init_log(log_name = path_out + name_sub + ".log")
+
+    #reading
+    df_text = pd.read_csv(path2data + CSV_TEXT)
+    df_video = pd.read_csv(path2data + CSV_VIDEO)
+    df_audio = pd.read_csv(path2data + CSV_AUDIO)
+
+    #clean data
+    cur_process_id = current_process()._identity[0]-1
+    df_video = cleanVideoDf(path2data+"_video processing", cur_process_id, df_video, df_info, min_row) 
+
+    #unify index
+    unify_index(df_video, [df_text, df_audio])
+
+    #combine combined
+    combined = truncateAndCombineAll(df_text, df_audio, df_video)
+
+    #reset and insert index
+    combined.reset_index(drop=True, inplace=True)
+    # combined.insert(1, "Time_Stamp", combined.index)
+
+    #write to csv
+    combined.to_csv(path_out + ".csv", index = False)
+    return combined
+
+def main():
+    #brows immediate sub directories
+    ls_dir_sub = list(os.walk(dir_src))[0][1]
+
+    #record starting time
+    tic = time.time()
+    #init pool of processes
+    pool = Pool(processes= min([os.cpu_count(), len(ls_dir_sub)]))
+    
+    #link process with task along with progress bar
+    pbar = tqdm(ls_dir_sub, desc='Main loop')
+    res = list(pool.imap(cleanAndMerge, pbar))
+
+    #start process
+    pool.close()
+    pool.join()
+
+    final = pd.concat(res, axis=0)
+
+    cols = ['Stage','Map','Team_0', 'Team_1']
+    possible_id = ((final[cols].shift() != final[cols]).any(axis=1)).cumsum()
+    final.loc[:, 'GameID'] = possible_id
+
+    final.to_csv(path_csv_alldata, index=False)
+
+    toc = time.time()
+    print(f'Completed in {toc - tic} seconds')
+
+
+if __name__ == "__main__":
+    main()
 
     #brows immediate sub directories
-    gen_sub = (os.walk(dir_src))
-    gen_sub.__next__() #skiping root
-    for x in tqdm(gen_sub, desc='Main Loop', leave=True): 
-        path2data = x[0]
-        stream_name = path2data[path2data.rindex('/'):]
-        path_out = dir_members + stream_name +  ".csv"
-        
-        #init logger
-        if args.log:
-            path_log = dir_members + '/log' 
-            createDirIfMissing(path_log)
-            init_log(log_name = path_out + stream_name + ".log")
+    # gen_sub = list(os.walk(dir_members))[0][2] #unpack; only get sub files
 
-        #reading
-        df_text = pd.read_csv(path2data + CSV_TEXT)
-        df_video = pd.read_csv(path2data + CSV_VIDEO)
-        df_audio = pd.read_csv(path2data + CSV_AUDIO)
+    # final = pd.concat([pd.read_csv(dir_members+'/'+path) for path in gen_sub if '.csv' in path], axis=0)
 
-        #clean data
-        df_video = cleanVideoDf(path2data+"_video processing", df_video, df_info, min_row) 
+    # cols = ['Stage','Map','Team_0', 'Team_1']
+    # possible_id = ((final[cols].shift() != final[cols]).any(axis=1)).cumsum()
+    # final.loc[:, 'GameID'] = possible_id
 
-        #unify index
-        unify_index(df_video, [df_text, df_audio])
-
-        #combine all
-        all = truncateAndCombineAll(df_text, df_audio, df_video)
-
-        #reset index
-        all.reset_index(drop=True, inplace=True)
-
-        #write to csv
-        all.to_csv(path_out , index = True, index_label="Time_Stamp")
-
-        print(path2data, "finished")
-
-    #brows immediate sub directories
-    gen_sub = list(os.walk(dir_members))[0][2] #unpack; only get sub files
-
-    for x in gen_sub: 
-        print(x)
+    # final.to_csv(path_csv_alldata, index=False)

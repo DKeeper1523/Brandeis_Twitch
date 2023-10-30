@@ -8,7 +8,7 @@ def unify_index(df_src, other_dfs):
     for df in other_dfs:
         df.loc[:, :] = df.loc[indicies_src, :]
     #Unification is finish
-    print("Unification is finished")
+    # print("Unification is finished")
 
 def truncateAndCombineAll(df_text, df_audio, df_video):
     truncateAudio(df_audio)

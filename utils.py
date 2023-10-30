@@ -23,7 +23,7 @@ def printFull(df, NAME_DF = ""):
 def init_log(log_name):
     logging.basicConfig(filename=log_name, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     logging.FileHandler(log_name, mode='w')
-    print("logger initialized")
+    # print("logger initialized")
 
 def insertTimers(df, ls_headrs):
     #   - str used here is saving info for further modification
@@ -32,10 +32,16 @@ def insertTimers(df, ls_headrs):
 def insertMapScores(df, map_score_headers):
     _insertEmptyColumns(df, map_score_headers, i_insert=2, _dtype= int)
 
+def insertDateAndStream(df, csv_name, loc=1):
+    date = csv_name[csv_name.index('/')+1:csv_name.index('_')]
+    stream = csv_name[csv_name.index(' ')+1]
+    df.insert(loc, 'Stream', stream)
+    df.insert(loc, 'Date', date)
+
 #column with be inserted in order, first in list will be the last place inserted
 def _insertEmptyColumns(df, ls_col_name, i_insert, _dtype):
     for col_name in ls_col_name:
-        print("inserted ", col_name)
+        # print("inserted ", col_name)
         df.insert(loc = i_insert, column = col_name, value = pd.Series(dtype = _dtype))
 
 def addStageSep(df):
@@ -121,8 +127,6 @@ def setCol2Mode(df, ls_col):
             logging.error("unable to find mode in group")
             return
         df.loc[:, col] = mode
-        #fill na
-        df[col].fillna(mode, inplace=True)
 
 #needs a function that operate on cell, so "func" needs to return a string
 def fix_col_with_fun(df, cols, func):
@@ -149,8 +153,8 @@ def stage(text, true_groupstages):
 
     match = re.search(pattern, str(no_space))
     if match is None:
-        # logging.error("[stage() match-stage Failed]: <'Stage'> Unable to convert \'" + text + "\' to appropriate format like \'LEGEND 0-0\'")
-        print("[stage() match-stage Failed]: <'Stage'> Unable to convert \'" + text + "\' to appropriate format like \'LEGEND 0-0\'")
+        logging.error("[stage() match-stage Failed]: <'Stage'> Unable to convert \'" + text + "\' to appropriate format like \'LEGEND 0-0\'")
+        # print("[stage() match-stage Failed]: <'Stage'> Unable to convert \'" + text + "\' to appropriate format like \'LEGEND 0-0\'")
     else:
         #find closest matched stage
         group1 = mapMostSimilar(match.group(1), true_groupstages)
@@ -161,8 +165,8 @@ def stage(text, true_groupstages):
         scores = re.sub(TARGETS_TWO, '2', scores)
         formatted = scores[0] + '-' + scores[-1]
         if not scores[0].isdigit() or  not scores[0].isdigit():
-            print("WARNING: [stage() digit-recognition]: original text", text, " scores: ", scores[0] + ';' + scores[-1])
-            # logging.error("[stage() digit-recognition]: scores: ", scores)
+            # print("WARNING: [stage() digit-recognition]: original text", text, " scores: ", scores[0] + ';' + scores[-1])
+            logging.error("[stage() digit-recognition]: scores: " + str(scores))
         return group1.capitalize() + " "+ formatted
 
 #hp return integer

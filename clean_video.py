@@ -3,7 +3,7 @@ from hp_utils import *
 from time_utils import *
 from truncate_utils import truncateVideo
 
-import numpy as np
+from tqdm.auto import tqdm
 
 #CONSTANTS
 ALL_MAP_NAME = ["inferno", 'mirage', 'nuke', 'overpass', 'vertigo', 'ancient', 'anubis', 'dust ii', 'train', 'cache']
@@ -17,7 +17,13 @@ ROUND_TIME = 'Ingame_Time_Left'
 BOMB_TIME = 'Ingame_Bomb_Time'
 INGAME_TIME_PASSED = 'Ingame_Time_Passed'
 
-def cleanVideoDf(df_video, df_info, min_row_per_group):
+#Headers
+HP_HEADERS = ['Player_HP_'+str(i) for i in range(10)]
+GAME_ID = 'GameID'
+#To Record Game Played 
+dict_stage_map_team = dict(dict())
+
+def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
     #init dependent constant
     ALL_TEAM_NAME =  list(df_info['Team'])
     ALL_GROUP_STAGE = [x.lower() for x in df_info['From'].unique()]
@@ -28,9 +34,6 @@ def cleanVideoDf(df_video, df_info, min_row_per_group):
     # REMOVING UNUSED ROWS
     df_video = df_video[df_video['Stage'].notnull()]
 
-    #Headers
-    HP_HEADERS = ['Player_HP_'+str(i) for i in range(10)]
-
     #Main loop to change each group
     insertTimers(df_video, [BOMB_TIME, INGAME_TIME_PASSED])
     insertMapScores(df_video, [T1_MAP_SCORE, T0_MAP_SCORE])
@@ -38,12 +41,13 @@ def cleanVideoDf(df_video, df_info, min_row_per_group):
     #init final df
     final = pd.DataFrame()
 
-    for i, group in groupDf(df_video):
+    #
+    for i, group in tqdm(groupDf(df_video), desc=file_name, leave=True, position=pbar_pos):
         if len(group) >= min_row_per_group:
             #Set Round Scores
             setCol2Mode(group, ['Score_0', 'Score_1'])
 
-            print(f'Group {i}:')
+            # print(f'Group {i}:')
             #map raw to clean counter part
             fix_col_with_replace(group, ["Map"], ALL_MAP_NAME, True)
             group['Map'] = group['Map'].apply(str.capitalize)
@@ -94,7 +98,11 @@ def cleanVideoDf(df_video, df_info, min_row_per_group):
         
             #update
             final = pd.concat([final, group], axis=0)
-            print("group updated")
+            # print("group updated")
+    #insert date and csv
+    insertDateAndStream(final, file_name)
+    final.insert(loc=1, column = GAME_ID, value = pd.Series(dtype=int))
 
-        # print(df_video.dtypes)
-    return final[final['Stage'].notnull()]
+    #unify columns to 
+    setCol2Mode(final, ['Stream', 'Date'])
+    return  final[final['Stage'].notnull()]

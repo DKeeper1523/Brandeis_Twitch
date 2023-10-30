@@ -32,7 +32,7 @@ def resetHP(df, row_indices, hp_headers = ['Player_HP_'+str(i) for i in range(10
     # for row in row_indices:
     if len(row_indices) > 0:
         df.loc[row_indices, hp_headers] = 100
-        print("Hp set to 100 :", row_indices)
+        # print("Hp set to 100 :", row_indices)
 
 def cleanInGameTime(df, header_ingame_time, header_bombtime):
     #previous function has already turned time from "1:40" to "1.40"

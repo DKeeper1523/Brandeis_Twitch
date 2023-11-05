@@ -47,9 +47,7 @@ def _insertEmptyColumns(df, ls_col_name, i_insert, _dtype):
 def addStageSep(df):
     _addSpace = lambda txt, index = -3: txt[:index] + " " + txt[index:]
     #remove all space then add the space in the right place
-    # df.loc[:,'Stage'] = df.Stage.str.replace(r'\s', '').apply(_addSpace)
-    df.Stage.apply(lambda x: re.sub(r'\s+', '', x)).apply(_addSpace)
-
+    df.loc[:, 'Stage'] = df.loc[:, 'Stage'].apply(lambda x: re.sub(r'\s+', '', x)).apply(_addSpace)
 
 def fixBO1Stage(df):
     # BO is BO1 and stage has no digit
@@ -71,7 +69,7 @@ def fillNaCols(df, ls_header, bfill = True, fFill = False):
             df[h].bfill(inplace=True)
 
 def convertCols2Numeric(df, ls_header, _errors = 'ignore'):
-    df.loc[:,ls_header] = df.loc[:,ls_header].apply(lambda dataframe: pd.to_numeric(dataframe, errors= _errors, downcast='integer'))
+    df.loc[:,ls_header] = df.loc[:,ls_header].apply(pd.to_numeric, errors=_errors, downcast='integer')
 
 def groupDf(df):
     def _group_consec_int(ints):
@@ -120,7 +118,7 @@ def fix_col_with_replace(df, ls_col, ls_truth, setCol2Mode_ = False):
 def setCol2Mode(df, ls_col):
     for col in ls_col:
         try:
-            mode = df[col].mode()[0]
+            mode = df.loc[df[col].notna(), col].mode()[0]
             if mode == "":
                 logging.warn("mode is empty string")
         except:
@@ -205,6 +203,7 @@ def hp(text):
 
 #splitting stage into three different columns
 def split_stage(df, t0_score_header, t1_score_header):
+    SKIPPING = ["Showmatch", "Grandfinal"]
     if df['Stage'].isna().all():
         return False
     else:
@@ -222,6 +221,10 @@ def split_stage(df, t0_score_header, t1_score_header):
             col = df.pop(col_name)
             df.insert(2, col_name, pd.to_numeric(col, errors='coerce')) #converted to integer
             setCol2Mode(df, [col_name])
+
+        printFull(df.Stage.apply(lambda x: x in SKIPPING))
+        df.insert(2, 'bool_skill', df.Stage.apply(lambda x: x in SKIPPING))
+
         #dropping the Stage_Scores
         df.drop('Stage_Scores', axis = 1, inplace = True)
         return True

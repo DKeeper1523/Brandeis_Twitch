@@ -62,6 +62,7 @@ def ensureColsOrder(df, ls_hp, order = 'descend'):
                 # print("left == right", left == right)
                 # print("sorted == v_window?".upper(), sorted(v_window, reverse=True) == v_window)
                 #check for ABA patter, if so make B the same as A
+
                 if left == right:
                     _setN2P(i_center, center, left, window)
                 #check if window is not in descending order sorted

@@ -20,7 +20,7 @@ parser.add_argument(dest='path_csv_info', type=str, help="CSV containing basic i
 parser.add_argument('-out', type=str, help="directory for storing cleaned video data")
 parser.add_argument('-l', '--log', action='store_true', help='Toggle logging')
 parser.add_argument('--thresh', type=int, nargs='?', const=30, help='minimum number row for in_game round')
-#Run with: python Brandeis_Twitch_RA/main.py rawdata Brandeis_Twitch_RA/basic_information.csv -out clean
+#Run with: python Brandeis_Twitch_RA/main_asynch.py rawdata Brandeis_Twitch_RA/basic_information.csv -out clean -l
 
 # Parse and print the results
 args = parser.parse_args()
@@ -118,7 +118,7 @@ def main():
     sorted_result = sorted(res, key= lambda df: df.Date[0] + df.Stream[0])
     final = pd.concat(sorted_result, axis=0)
 
-    cols = ['Stage','Map','Team_0', 'Team_1']
+    cols = ['Stage', 'Team_0', 'Team_1']
     possible_id = ((final[cols].shift() != final[cols]).any(axis=1)).cumsum()
     final.loc[:, 'GameID'] = possible_id
 
@@ -126,7 +126,6 @@ def main():
 
     toc = time.time()
     print(f'Completed in {toc - tic} seconds')
-
 
 if __name__ == "__main__":
     main()

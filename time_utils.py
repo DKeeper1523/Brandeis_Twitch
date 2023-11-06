@@ -3,6 +3,9 @@ import numpy as np
 from utils import printFull
 from collections import Counter
 
+# import warnings
+# warnings.simplefilter(action='ignore', category=FutureWarning)
+
 #Time starter
 START_PAST_TIME = 5
 #setting round time
@@ -73,8 +76,16 @@ def cleanInGameTime(df, header_ingame_time, header_bombtime):
         if len(prep_index) > 0:
             #if cur max is not 115
             missing_roundtime = pd.Series(range(int(cur_max), MAX_ROUND_TIME), dtype=int) + 1
-            freeze_time = pd.Series(range(len(prep_index) - len(missing_roundtime))) + 1
-            complete_prep = pd.concat([missing_roundtime, freeze_time], ignore_index=True)[::-1]
+
+            #create complete prep
+            if len(prep_index) - len(missing_roundtime) > 0 :
+                freeze_time = pd.Series(range(len(prep_index) - len(missing_roundtime))) + 1
+                complete_prep = pd.concat([missing_roundtime, freeze_time], ignore_index=True)[::-1]
+            else:
+                complete_prep = missing_roundtime[::-1]
+
+            # complete_prep = pd.concat([missing_roundtime, freeze_time], ignore_index=True)[::-1]
+            
             #truncate excess
             complete_prep = complete_prep[-len(prep_index):]
             #set new prep index

@@ -88,7 +88,7 @@ def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
             fixBO3(group)
 
             #  - spliting stage into multiple col
-            # split_stage(group, t0_score_header = T0_MAP_SCORE, t1_score_header=T1_MAP_SCORE)
+            split_stage(group, t0_score_header = T0_MAP_SCORE, t1_score_header=T1_MAP_SCORE)
 
             #Fix Time - need to fix time before
             cleanInGameTime(group, ROUND_TIME, BOMB_TIME)
@@ -114,8 +114,9 @@ def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
             final = pd.concat([final, group], axis=0)
             # print("group updated")
 
-    #refreshing map score
-    # mask = final.loc[:, 'Stage'] in ["Grandfinal", ""]
+    #refreshing stages with unreadable stages
+    mask = (final.Stage == "Grandfinal") | (final.Stage == "Showmatch")
+    final.loc[mask, ROUND_SCORE] = 0
 
     #insert date and csv
     insertDateAndStream(final, file_name)

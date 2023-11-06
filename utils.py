@@ -203,30 +203,23 @@ def hp(text):
 
 #splitting stage into three different columns
 def split_stage(df, t0_score_header, t1_score_header):
-    SKIPPING = ["Showmatch", "Grandfinal"]
-    if df['Stage'].isna().all():
-        return False
-    else:
-        #first split
-        try:
-            #           Here n=1 allows for split when cell is NA
-            df[['Stage', 'Stage_Scores']] = df['Stage'].str.split(' ', n=1, expand=True)
-        except:
-            logging.error("split_stage Failed: unable to split Stage (", str(df['Stage']) ,") into 3; probably because group is too small")
-        #     return False
-        #second split
-        df[[t1_score_header, t0_score_header]] = df['Stage_Scores'].str.split('-', n = 1, expand = True)
-        #Move column
-        for col_name in [t1_score_header, t1_score_header]:
-            col = df.pop(col_name)
-            df.insert(2, col_name, pd.to_numeric(col, errors='coerce')) #converted to integer
-            setCol2Mode(df, [col_name])
+    #first split
+    try:
+        #           Here n=1 allows for split when cell is NA
+        df[['Stage', 'Stage_Scores']] = df['Stage'].str.split(' ', n=1, expand=True)
+    except:
+        logging.error("split_stage Failed: unable to split Stage (", str(df['Stage']) ,") into 3; probably because group is too small")
 
-        printFull(df.Stage.apply(lambda x: x in SKIPPING))
-        df.insert(2, 'bool_skill', df.Stage.apply(lambda x: x in SKIPPING))
+    #second split
+    df[[t1_score_header, t0_score_header]] = df['Stage_Scores'].str.split('-', n = 1, expand = True)
+    #Move column
+    for col_name in [t1_score_header, t1_score_header]:
+        col = df.pop(col_name)
+        df.insert(2, col_name, pd.to_numeric(col, errors='coerce')) #converted to integer
+        setCol2Mode(df, [col_name])
 
-        #dropping the Stage_Scores
-        df.drop('Stage_Scores', axis = 1, inplace = True)
-        return True
+    #dropping the Stage_Scores
+    df.drop('Stage_Scores', axis = 1, inplace = True)
+    return True
 
 

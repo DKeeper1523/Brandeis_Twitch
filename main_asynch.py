@@ -80,8 +80,9 @@ def cleanAndMerge(name_sub):
     df_video = pd.read_csv(path2data + CSV_VIDEO)
     df_audio = pd.read_csv(path2data + CSV_AUDIO)
 
-    #clean data
+
     cur_process_id = current_process()._identity[0]-1
+    #clean data
     df_video = cleanVideoDf(path2data+"_video processing", cur_process_id, df_video, df_info, min_row) 
 
     #unify index
@@ -109,15 +110,18 @@ def main():
     
     #link process with task along with progress bar
     pbar = tqdm(ls_dir_sub, desc='Main loop')
+
     res = list(pool.imap(cleanAndMerge, pbar))
 
     #start process
     pool.close()
     pool.join()
 
+    #sorting all raw csv based on date and Stream Type
     sorted_result = sorted(res, key= lambda df: df.Date[0] + df.Stream[0])
     final = pd.concat(sorted_result, axis=0)
 
+    #GameID: the id for BO game played by two team (including both bo1,bo3)
     cols = ['Stage', 'Team_0', 'Team_1']
     possible_id = ((final[cols].shift() != final[cols]).any(axis=1)).cumsum()
     final.loc[:, 'GameID'] = possible_id

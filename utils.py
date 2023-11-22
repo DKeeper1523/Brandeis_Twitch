@@ -79,7 +79,7 @@ def groupDf(df):
         int_diff = ints.diff()
         groups = (int_diff > 1).cumsum()
         return groups
-    grouped_df = df.groupby(_group_consec_int(df[df[STAGE_NAME].notnull()][T_STAMP]))
+    grouped_df = df.groupby(_group_consec_int(df[df[STAGE_NAME].notnull()][T_STAMP]), sort=False)
     return grouped_df
 
 def mapMostSimilar(base, ls_guess, guess_up = False, guess_low = False, n = 1, cutoff = 0.01):

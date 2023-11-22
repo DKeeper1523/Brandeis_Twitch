@@ -47,7 +47,6 @@ def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
     #init final df
     final = pd.DataFrame()
 
-    #
     for i, group in tqdm(groupDf(df_video), desc=file_name, leave=True, position=pbar_pos):
         if len(group) >= min_row_per_group:
 
@@ -98,7 +97,7 @@ def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
             #convert numeric, ensure type is safe for HP fix
             ls_2int = [ROUND_TIME, BOMB_TIME, T1_MAP_SCORE, T0_MAP_SCORE, 'Score_0', 'Score_1'] + HP_HEADERS
             #cast numberic types
-            convertCols2Numeric(df_video, ls_2int, _errors = 'coerce')
+            convertCols2Numeric(group, ls_2int, _errors = 'coerce')
 
             #Fix HP (MUST BE TYPE SAFE)
             #  - ensuring that all hp is in descending order

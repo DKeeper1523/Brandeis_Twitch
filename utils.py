@@ -68,8 +68,11 @@ def fillNaCols(df, ls_header, bfill = True, fFill = False):
         if bfill:
             df[h].bfill(inplace=True)
 
-def convertCols2Numeric(df, ls_header, _errors = 'ignore'):
+def convertCols2Numeric(df, ls_header, _errors = 'ignore', bool_fillzero = False):
     df.loc[:,ls_header] = df.loc[:,ls_header].apply(pd.to_numeric, errors=_errors, downcast='integer')
+    #fill na
+    if bool_fillzero:
+        df.loc[:, ls_header] = df.loc[:, ls_header].fillna(value=0)
 
 def groupDf(df):
     def _group_consec_int(ints):

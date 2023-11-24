@@ -7,7 +7,7 @@ from kill_utils import count_kills
 from tqdm.auto import tqdm
 
 #CONSTANTS
-ALL_MAP_NAME = ["inferno", 'mirage', 'nuke', 'overpass', 'vertigo', 'ancient', 'anubis', 'dust ii', 'train', 'cache']
+ALL_MAP_NAME = ["inferno", 'mirage', 'nuke', 'overpass', 'vertigo', 'ancient', 'anubis']
 ALL_BO = ["BO1", "BO3"]
 
 #NEW HEADERS

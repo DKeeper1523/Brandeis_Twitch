@@ -31,7 +31,7 @@ ADDITIONAL_STAGE = ['Champions', 'GrandFinal', 'ShowMatch']
 
 def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
     #init dependent constant
-    ALL_TEAM_NAME =  list(df_info['Team'])
+    ALL_TEAM_NAME =  [x.replace(" ", "") for x in df_info['Team']]
     ALL_GROUP_STAGE = [x.lower() for x in df_info['From'].unique()] + ADDITIONAL_STAGE
 
     #remove every 1001 row
@@ -54,20 +54,9 @@ def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
             group.loc[:, ROUND_SCORE] = group.loc[:, ROUND_SCORE].bfill().ffill().fillna(0)
             setCol2Mode(group, ['Score_0', 'Score_1'])
 
-            # print(f'Group {i}:')
-            #map raw to clean counter part
-            fix_col_with_replace(group, ["Map"], ALL_MAP_NAME, True)
-            group['Map'] = group['Map'].apply(str.capitalize)
-            fix_col_with_replace(group, ["Team_0", "Team_1"], ALL_TEAM_NAME, True)
-            fix_col_with_replace(group, ["BO"], ALL_BO, True)
-            
             #cleaning stage
             fixBO1Stage(group)
             addStageSep(group)
-
-            #fix bo
-            setCol2Mode(group, ['BO'])
-            # printFull(group.loc[:, ['Stage', 'BO']].head(5), 'head')
 
             #format cleaning
             fix_col_with_fun(group, ['Stage'], lambda x: stage(x, ALL_GROUP_STAGE))
@@ -83,11 +72,8 @@ def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
 
             #Special Cleaning:
             #set stage to mode
-            setCol2Mode(group, ['Stage'])
+            setCol2Mode(group, ['Stage', 'Team_0', 'Team_1'])
             fixBO3(group)
-
-            #  - spliting stage into multiple col
-            split_stage(group, t0_score_header = T0_MAP_SCORE, t1_score_header=T1_MAP_SCORE)
 
             #Fix Time - need to fix time before
             cleanInGameTime(group, ROUND_TIME, BOMB_TIME)
@@ -106,12 +92,20 @@ def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
             #Fix Kills
             count_kills(group)
 
-            #Fix Map Score numbers:
-            # ensureColsOrder(group, [T1_MAP_SCORE, T0_MAP_SCORE], order = 'ascend')
+            #fix map, team, BO
+            fix_col_with_replace(group, ["Map"], ALL_MAP_NAME)
+            group.loc[:,'Map'] = group['Map'].apply(str).apply(str.capitalize)
+            fix_col_with_replace(group, ["Team_0", "Team_1"], ALL_TEAM_NAME)
+            fix_col_with_replace(group, ["BO"], ALL_BO)
+
+            #set cols to mode
+            setCol2Mode(group, ['Map', 'Team_0', 'Team_1', 'BO'])
         
             #update
             final = pd.concat([final, group], axis=0)
-            # print("group updated")
+
+    #  - spliting stage into multiple col
+    split_stage(final, t0_score_header = T0_MAP_SCORE, t1_score_header=T1_MAP_SCORE)
 
     #refreshing stages with unreadable stages
     mask = (final.Stage == "Grandfinal") | (final.Stage == "Showmatch")

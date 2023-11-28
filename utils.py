@@ -82,36 +82,30 @@ def groupDf(df):
     grouped_df = df.groupby(_group_consec_int(df[df[STAGE_NAME].notnull()][T_STAMP]), sort=False)
     return grouped_df
 
-def mapMostSimilar(base, ls_guess, guess_up = False, guess_low = False, n = 1, cutoff = 0.01):
+def mapMostSimilar(base, ls_guess, guess_up = False, guess_low = False, cutoff = 30):
     ls_guess = list(ls_guess)
     if guess_up:
         ls_guess = [x.upper() for x in ls_guess]
     elif guess_low:
         ls_guess = [x.lower() for x in ls_guess]
-    return process.extractOne(base, ls_guess)[0]
+    
+    if isinstance(base, str):
+        guess = process.extractOne(base, ls_guess, score_cutoff=cutoff)
+        return guess[0] if guess is not None else ''
+    else:
+        return ''
 
-#Fix map name
-#Create a mapping from original name to the mostlikely name
-def createDictGuess(ls_base_name, ls_target_name):
-    dict_truth = {}
-    for name in ls_base_name:
-        most_likely = mapMostSimilar(str(name).lower(), ls_target_name)
-        dict_truth[name] = most_likely
-    return dict_truth
 
 #To fix certain column with an iterable ground truth
 def fix_col_with_replace(df, ls_col, ls_truth, setCol2Mode_ = False):
     #Collect all the columns that needs to be fixed
     #   - assume that they are in the same domain
     #       -e.g play1_name, player2_name are within the same domain; map and hp are not in the same domain
-    ls_bad = set()
-    for column_name in ls_col:
-        ls_bad = ls_bad|set(df[column_name])
+    ls_bad = pd.unique(df[ls_col].values.ravel('K'))
 
-    dict_guess = createDictGuess(ls_bad, ls_truth)
-    for key in dict_guess.keys():
-        for columnName in ls_col:
-            df[columnName] = df[columnName].replace(key, dict_guess[key])
+    for bad in ls_bad:
+        guess = mapMostSimilar(bad, ls_truth)
+        df.loc[:,ls_col] = df.loc[:,ls_col].replace(bad, guess)
 
     #set the entire column to be the mode of the column
     if setCol2Mode_:

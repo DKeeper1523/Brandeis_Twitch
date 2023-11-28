@@ -19,7 +19,8 @@ def truncateAndCombineAll(df_text, df_audio, df_video):
 
     #remove original indices
     df_audio = df_audio.iloc[:, 1:]
-    df_video = df_video.iloc[:, 1:]
+    # df_video = df_video.iloc[:, 1:]
+    df_video.rename(columns={'Timestamp': 'Stream_Time_Past'}, inplace=True)
     df_text = df_text.iloc[:, 1:]
 
     #concatenate

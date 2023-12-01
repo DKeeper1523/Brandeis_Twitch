@@ -115,8 +115,10 @@ def setIngameTimePast(df, header_round_time, header_ingame_time_past):
     _offset = lambda cur_max: START_PAST_TIME + MAX_ROUND_TIME - cur_max
     #skipping df that is entirely empty
     if not df[header_round_time].isnull().all():
+        #limiting window of search : to prevent erroneous max found from the tail of time series
+        WINDOW = 25
         #get needed indexes
-        index_max_round_time = df[header_round_time].idxmax()
+        index_max_round_time = df[header_round_time].head(WINDOW).idxmax() 
         first_index = df.index[0]
 
         #initial value

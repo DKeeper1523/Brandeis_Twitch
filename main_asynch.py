@@ -28,7 +28,7 @@ args = parser.parse_args()
 #get dir_src
 dir_src = args.src
 #   - minimum # of row for ingame round in video
-DEFAULT_MIN_ROW = 30
+DEFAULT_MIN_ROW = 15
 min_row = args.thresh if args.thresh is not None else DEFAULT_MIN_ROW #if thresh has specified value 
 
 #check if current working directory has raw data folder

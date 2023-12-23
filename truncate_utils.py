@@ -13,7 +13,7 @@ def unify_index(df_src, other_dfs):
 
 def truncateAndCombineAll(df_text, df_audio, df_video):
     truncateAudio(df_audio)
-    # truncateVideo(df_video)
+    truncateVideo(df_video)
     #get the minimal length
     min_len = min([len(x) for x in [df_video, df_audio, df_text]])
 

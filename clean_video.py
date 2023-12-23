@@ -1,8 +1,10 @@
 from utils import *
 from hp_utils import *
 from time_utils import *
-from truncate_utils import truncateVideo
 from kill_utils import count_kills
+
+from split_conjoined_round import split_conjoined_round
+from merge_discontinuous_rounds import merge_disontinuous_rounds
 
 from tqdm.auto import tqdm
 
@@ -34,75 +36,73 @@ def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
     ALL_TEAM_NAME =  [x.replace(" ", "") for x in df_info['Team']]
     ALL_GROUP_STAGE = [x.lower() for x in df_info['From'].unique()] + ADDITIONAL_STAGE
 
-    #remove every 1001 row
-    truncateVideo(df_video)
-
-    # REMOVING UNUSED ROWS
-    df_video = df_video[df_video['Stage'].notnull()]
-
-    #Main loop to change each group
     insertTimers(df_video, [BOMB_TIME, INGAME_TIME_PASSED])
     insertMapScores(df_video, [T1_MAP_SCORE, T0_MAP_SCORE])
 
     #init final df
     final = pd.DataFrame()
 
-    for i, group in tqdm(groupDf(df_video), desc=file_name, leave=True, position=pbar_pos):
-        if len(group) >= min_row_per_group:
+    #Main loop to change each group
+    for df_merged in merge_disontinuous_rounds(df_video):
+        for round in split_conjoined_round(df_merged):
+            if len(round) >= min_row_per_group:            
+                #Show Round Start and End
+                # show_column = ['Timestamp', 'Stage', 'Map', 'Ingame_Time_Left']
+                # print(round.loc[:, show_column].iloc[[0,-1], :])
+                
+                #Set Round Scores
+                round.loc[:, ROUND_SCORE] = round.loc[:, ROUND_SCORE].bfill().ffill().fillna(0)
+                setCol2Mode(round, ['Score_0', 'Score_1'])
 
-            #Set Round Scores
-            group.loc[:, ROUND_SCORE] = group.loc[:, ROUND_SCORE].bfill().ffill().fillna(0)
-            setCol2Mode(group, ['Score_0', 'Score_1'])
+                #cleaning stage
+                fixBO1Stage(round)
+                addStageSep(round)
 
-            #cleaning stage
-            fixBO1Stage(group)
-            addStageSep(group)
+                #format cleaning
+                fix_col_with_fun(round, ['Stage'], lambda x: stage(x, ALL_GROUP_STAGE))
+                fix_col_with_fun(round, [ROUND_TIME], time)
+                fix_col_with_fun(round, HP_HEADERS, hp)
 
-            #format cleaning
-            fix_col_with_fun(group, ['Stage'], lambda x: stage(x, ALL_GROUP_STAGE))
-            fix_col_with_fun(group, [ROUND_TIME], time)
-            fix_col_with_fun(group, HP_HEADERS, hp)
+                #Coercily convert all HP to numeric
+                #   - to counter cases where strings are in HP fields
+                convertCols2Numeric(round, HP_HEADERS, _errors = 'coerce')
 
-            #Coercily convert all HP to numeric
-            #   - to counter cases where strings are in HP fields
-            convertCols2Numeric(group, HP_HEADERS, _errors = 'coerce')
+                fillNaCols(round, HP_HEADERS)
+                fillNaCols(round, ['Stage'], fFill=True)
 
-            fillNaCols(group, HP_HEADERS)
-            fillNaCols(group, ['Stage'], fFill=True)
+                #Special Cleaning:
+                #set stage to mode
+                setCol2Mode(round, ['Stage', 'Team_0', 'Team_1'])
+                fixBO3(round)
 
-            #Special Cleaning:
-            #set stage to mode
-            setCol2Mode(group, ['Stage', 'Team_0', 'Team_1'])
-            fixBO3(group)
+                #Fix Time - need to fix time before
+                cleanInGameTime(round, ROUND_TIME, BOMB_TIME)
+                #set time past ingmae
+                setIngameTimePast(round, ROUND_TIME, INGAME_TIME_PASSED) #bug: lossing entire round
 
-            #Fix Time - need to fix time before
-            cleanInGameTime(group, ROUND_TIME, BOMB_TIME)
-            #set time past ingmae
-            setIngameTimePast(group, ROUND_TIME, INGAME_TIME_PASSED)
+                #convert numeric, ensure type is safe for HP fix
+                ls_2int = [ROUND_TIME, BOMB_TIME, T1_MAP_SCORE, T0_MAP_SCORE, 'Score_0', 'Score_1'] + HP_HEADERS
+                #cast numberic types
+                convertCols2Numeric(round, ls_2int, _errors = 'coerce')
 
-            #convert numeric, ensure type is safe for HP fix
-            ls_2int = [ROUND_TIME, BOMB_TIME, T1_MAP_SCORE, T0_MAP_SCORE, 'Score_0', 'Score_1'] + HP_HEADERS
-            #cast numberic types
-            convertCols2Numeric(group, ls_2int, _errors = 'coerce')
+                #Fix HP (MUST BE TYPE SAFE)
+                #  - ensuring that all hp is in descending order
+                ensureColsOrder(round, HP_HEADERS)
 
-            #Fix HP (MUST BE TYPE SAFE)
-            #  - ensuring that all hp is in descending order
-            ensureColsOrder(group, HP_HEADERS)
+                #Fix Kills
+                count_kills(round)
 
-            #Fix Kills
-            count_kills(group)
+                #fix map, team, BO
+                fix_col_with_replace(round, ["Map"], ALL_MAP_NAME)
+                round.loc[:,'Map'] = round['Map'].apply(str).apply(str.capitalize)
+                fix_col_with_replace(round, ["Team_0", "Team_1"], ALL_TEAM_NAME)
+                fix_col_with_replace(round, ["BO"], ALL_BO)
 
-            #fix map, team, BO
-            fix_col_with_replace(group, ["Map"], ALL_MAP_NAME)
-            group.loc[:,'Map'] = group['Map'].apply(str).apply(str.capitalize)
-            fix_col_with_replace(group, ["Team_0", "Team_1"], ALL_TEAM_NAME)
-            fix_col_with_replace(group, ["BO"], ALL_BO)
-
-            #set cols to mode
-            setCol2Mode(group, ['Map', 'Team_0', 'Team_1', 'BO'])
-        
-            #update
-            final = pd.concat([final, group], axis=0)
+                #set cols to mode
+                setCol2Mode(round, ['Map', 'Team_0', 'Team_1', 'BO'])
+            
+                #update
+                final = pd.concat([final, round], axis=0)
 
     #  - spliting stage into multiple col
     split_stage(final, t0_score_header = T0_MAP_SCORE, t1_score_header=T1_MAP_SCORE)
@@ -121,3 +121,17 @@ def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
     final.reset_index(drop=True, inplace=True)
     final.insert(1, "Time_Stamp", final.index)
     return  final[final['Stage'].notnull()]
+
+def test(group, str_index):
+    #checking the first index of every round
+    start_index = str(group.index[0])
+    #if the start index is 6027, stop
+    print('start_index', start_index)
+    print('str(type(start_index))', str(type(start_index)))
+    print('start index == 6207', start_index == '6207')
+    if start_index == str_index: 
+        #force print everything in pandas dataframe
+        pd.set_option('display.max_rows', None)
+        print('--------------------------------------------------')
+        print('group', group[['Ingame_Time_Passed', 'Ingame_Time_Left']])
+        raise Exception("stop")

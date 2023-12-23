@@ -5,6 +5,10 @@ from fuzzywuzzy import process, fuzz
 import re
 import logging
 
+#custom functions for round cleaning
+from split_conjoined_round import merge_disontinuous_rounds
+from split_conjoined_round import split_conjoined_round
+
 #CONSTANTS
 STAGE_NAME = "Stage"
 T_STAMP = "Timestamp"
@@ -75,11 +79,9 @@ def convertCols2Numeric(df, ls_header, _errors = 'ignore', bool_fillzero = False
         df.loc[:, ls_header] = df.loc[:, ls_header].fillna(value=0)
 
 def groupDf(df):
-    def _group_consec_int(ints):
-        int_diff = ints.diff()
-        groups = (int_diff > 1).cumsum()
-        return groups
-    grouped_df = df.groupby(_group_consec_int(df[df[STAGE_NAME].notnull()][T_STAMP]), sort=False)
+    # grouped_df = df.groupby((df[T_STAMP].diff()>1).cumsum(), sort=False) #BEFORE 12/22/2023
+
+    grouped_df = (round for df_merged in merge_disontinuous_rounds(df) for round in split_conjoined_round(df_merged))
     return grouped_df
 
 def mapMostSimilar(base, ls_guess, guess_up = False, guess_low = False, cutoff = 30):

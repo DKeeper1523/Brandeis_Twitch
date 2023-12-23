@@ -42,9 +42,13 @@ def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
     #init final df
     final = pd.DataFrame()
 
+    i= 0
     #Main loop to change each group
     for df_merged in tqdm(merge_disontinuous_rounds(df_video), desc=file_name, position=pbar_pos, leave=True):
         for round in split_conjoined_round(df_merged):
+            #add round id
+            round.insert(2, 'Round_ID', i)
+            i+=1
             if len(round) >= min_row_per_group:            
                 #Show Round Start and End
                 # show_column = ['Timestamp', 'Stage', 'Map', 'Ingame_Time_Left']

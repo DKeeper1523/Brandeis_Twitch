@@ -51,12 +51,12 @@ def _insertEmptyColumns(df, ls_col_name, i_insert, _dtype):
 def addStageSep(df):
     _addSpace = lambda txt, index = -3: txt[:index] + " " + txt[index:]
     #remove all space then add the space in the right place
-    df.loc[:, 'Stage'] = df.loc[:, 'Stage'].apply(lambda x: re.sub(r'\s+', '', x)).apply(_addSpace)
+    df.loc[:, 'Stage'] = df.loc[:, 'Stage'].apply(lambda x: re.sub(r'\s+', '', str(x))).apply(_addSpace)
 
 def fixBO1Stage(df):
     # BO is BO1 and stage has no digit
     bo1 = (df['BO'] == 'BO1')
-    no_digit = ~(df['Stage'].str.contains(r'\d|-|\s', regex = True))
+    no_digit = ~(df['Stage'].astype(str).str.contains(r'\d|-|\s', regex=True))
     zero_zero = " 0-0"
     df.loc[ bo1&no_digit, 'Stage'] = df.loc[ bo1&no_digit, 'Stage'] + zero_zero
 

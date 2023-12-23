@@ -42,5 +42,4 @@ def truncateAudio(df_audio, num_split = 5):
         flag += 1
 
 def truncateVideo(df_video, step = 1000):
-    indicies2drop = range(step-1, len(df_video), step)
-    df_video = df_video.drop(pd.Index(indicies2drop), axis=0, inplace=True)
+    df_video = df_video.drop(df_video.index[::1000], axis=0, inplace = True)

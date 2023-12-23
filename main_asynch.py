@@ -77,7 +77,7 @@ def cleanAndMerge(name_sub):
 
     #reading
     df_text = pd.read_csv(path2data + CSV_TEXT)
-    df_video = pd.read_csv(path2data + CSV_VIDEO)
+    df_video = pd.read_csv(path2data + CSV_VIDEO, low_memory=False)
     df_audio = pd.read_csv(path2data + CSV_AUDIO)
 
 

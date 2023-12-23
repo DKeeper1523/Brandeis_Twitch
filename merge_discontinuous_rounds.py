@@ -3,23 +3,6 @@ from utils import *
 
 from sliding_window import slidingWindow
 
-path = "/Users/tianyaoh/Desktop/dev/CS_Twitch/rawdata/2023-05-10_Stream A/video_analysis.csv"
-df_raw = pd.read_csv(path)
-
-path_info = '/Users/tianyaoh/Desktop/dev/CS_Twitch/Brandeis_Twitch_RA/basic_information.csv'
-df_info = pd.read_csv(path_info)
-
-ALL_TEAM_NAME =  list(df_info['Team']) + [' ']
-
-
-start_index = 8863
-end_index = 9020
-
-
-show_column = ['Timestamp', 'Stage', 'Map', 'Ingame_Time_Left', 'Score_0', 'Score_1']
-interested_column = df_raw.columns
-target_range = df_raw.loc[start_index:end_index, interested_column]
-
 def _cleanRoundFromPrev(df_dirty, df_prev):
     #get the last row of df_prev except the time stamp column
     last_row = df_prev.iloc[-1, 1:]
@@ -89,6 +72,20 @@ def merge_disontinuous_rounds(df):
             yield frame
 
 if __name__ == "__main__":
+    path = "/Users/tianyaoh/Desktop/dev/CS_Twitch/rawdata/2023-05-10_Stream A/video_analysis.csv"
+    df_raw = pd.read_csv(path)
+
+    path_info = '/Users/tianyaoh/Desktop/dev/CS_Twitch/Brandeis_Twitch_RA/basic_information.csv'
+    df_info = pd.read_csv(path_info)
+
+    ALL_TEAM_NAME =  list(df_info['Team']) + [' ']
+
+    start_index = 8863
+    end_index = 9020
+
+    show_column = ['Timestamp', 'Stage', 'Map', 'Ingame_Time_Left', 'Score_0', 'Score_1']
+    interested_column = df_raw.columns
+    target_range = df_raw.loc[start_index:end_index, interested_column]
     #forceprint everything
     pd.set_option('display.max_rows', None)
     for round in merge_disontinuous_rounds(target_range):

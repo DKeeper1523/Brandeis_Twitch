@@ -4,28 +4,6 @@ from utils import *
 from merge_discontinuous_rounds import merge_disontinuous_rounds
 from sliding_window import slidingWindow
 
-path = "/Users/tianyaoh/Desktop/dev/CS_Twitch/rawdata/2023-05-10_Stream A/video_analysis.csv"
-df_raw = pd.read_csv(path)
-
-path_info = '/Users/tianyaoh/Desktop/dev/CS_Twitch/Brandeis_Twitch_RA/basic_information.csv'
-df_info = pd.read_csv(path_info)
-
-ALL_TEAM_NAME =  list(df_info['Team']) + [' ']
-
-
-start_index = 9623
-end_index = 9785
-
-def clean_complete_round(df):
-    df['cleaned?'] = True
-    return df
-
-show_column = ['Timestamp', 'Stage', 'Map', 'Ingame_Time_Left']
-target_range = df_raw.loc[start_index:end_index, show_column]
-
-#init final
-final = []
-
 #The aim here is to split rounds that has multiple rounds (runing continuously)
 def split_conjoined_round(df_has_stage):
     #create mask column with three conditions: cell, previous, and next cell has number
@@ -94,6 +72,23 @@ def split_conjoined_round(df_has_stage):
 
 
 if __name__ == "__main__":
+    path = "/Users/tianyaoh/Desktop/dev/CS_Twitch/rawdata/2023-05-10_Stream A/video_analysis.csv"
+    df_raw = pd.read_csv(path)
+
+    path_info = '/Users/tianyaoh/Desktop/dev/CS_Twitch/Brandeis_Twitch_RA/basic_information.csv'
+    df_info = pd.read_csv(path_info)
+
+    ALL_TEAM_NAME =  list(df_info['Team']) + [' ']
+
+    start_index = 9623
+    end_index = 9785
+
+    show_column = ['Timestamp', 'Stage', 'Map', 'Ingame_Time_Left']
+    target_range = df_raw.loc[start_index:end_index, show_column]
+
+    #init final
+    final = []
+
     i = 0
     #force print everything in pandas dataframe
     pd.set_option('display.max_rows', None)

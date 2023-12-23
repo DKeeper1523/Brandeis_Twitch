@@ -9,6 +9,9 @@ from tqdm.auto import tqdm
 from multiprocessing import Pool, current_process
 from functools import partial
 
+import warnings
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
 # Create the parser and add arguments
 parser = argparse.ArgumentParser(
     prog = 'CSGO_Video_analysis_cleaner',

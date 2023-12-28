@@ -119,7 +119,7 @@ for map_played, group in all_groupby:
     #chop group into rounds based on HP
     index_fullHP = group["Ingame_Time_Passed"].index
     #consecutive index
-    round_group = index_fullHP.groupby((group["Ingame_Time_Passed"].diff() != 1).cumsum())
+    round_group = index_fullHP.groupby((group["Round_ID"].diff() != 0).cumsum())
 
     #before aligning data, first align team names
     bool_t0_aligned = hltv_align['T0'].unique()[0] == t0_t1_map[0]
@@ -161,6 +161,9 @@ for map_played, group in all_groupby:
         #  - where the stream overlay is exactly the same as the normal match except it is replay
         #  - To avoid this, we will only trust the first n rounds played for all matches
         #  - As for program, we here check if the current round number is greater or equal to the hltv record
+        print("num_round: ", num_round)
+        print("len(hltv_align)", len(hltv_align))
+
         if num_round <= len(hltv_align):
             #mark alignment
             group.loc[round_index,'hltv_aligned?'] = True

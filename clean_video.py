@@ -57,7 +57,7 @@ def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
             lock.acquire()
 
             #add round id
-            round.insert(2, 'Round_ID', round_id)
+            round.insert(0, 'Round_ID', round_id)
             round_id+=1
             
             #relase lock

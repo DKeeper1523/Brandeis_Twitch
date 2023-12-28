@@ -8,6 +8,8 @@ from merge_discontinuous_rounds import merge_disontinuous_rounds
 
 from tqdm.auto import tqdm
 
+import threading
+
 #CONSTANTS
 ALL_MAP_NAME = ["inferno", 'mirage', 'nuke', 'overpass', 'vertigo', 'ancient', 'anubis']
 ALL_BO = ["BO1", "BO3"]
@@ -31,7 +33,13 @@ dict_stage_map_team = dict(dict())
 #Additional Stages
 ADDITIONAL_STAGE = ['Champions', 'GrandFinal', 'ShowMatch']
 
+#round_id
+round_id= 0
+# Lock to control access to the shared resource
+lock = threading.Lock()
+
 def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
+    global round_id
     #init dependent constant
     ALL_TEAM_NAME =  [x.replace(" ", "") for x in df_info['Team']]
     ALL_GROUP_STAGE = [x.lower() for x in df_info['From'].unique()] + ADDITIONAL_STAGE
@@ -42,13 +50,19 @@ def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
     #init final df
     final = pd.DataFrame()
 
-    i= 0
     #Main loop to change each group
-    for df_merged in tqdm(merge_disontinuous_rounds(df_video), desc=file_name, position=pbar_pos, leave=True):
+    for df_merged in tqdm(merge_disontinuous_rounds(df_video), desc=file_name, position=pbar_pos, leave=False):
         for round in split_conjoined_round(df_merged):
+            #acquire lock
+            lock.acquire()
+
             #add round id
-            round.insert(2, 'Round_ID', i)
-            i+=1
+            round.insert(2, 'Round_ID', round_id)
+            round_id+=1
+            
+            #relase lock
+            lock.release()
+
             if len(round) >= min_row_per_group:            
                 #Show Round Start and End
                 # show_column = ['Timestamp', 'Stage', 'Map', 'Ingame_Time_Left']

@@ -16,9 +16,9 @@ def convertSeconds(seconds):
     else:
         return seconds
 
-path_hltv = "clean/formatted_hltv_scrape.csv"
-# path_all = "clean/all.csv"
-path_all = "clean/all_data.csv"
+path_hltv = "clean_data/formatted_hltv_scrape.csv"
+# path_all = "clean_data/all.csv"
+path_all = "clean_data/all_data.csv"
 
 
 df_hltv = pd.read_csv(path_hltv)
@@ -254,7 +254,7 @@ for map_played, group in all_groupby:
 
 
 
-path_aligned = 'clean/hltv_aligned.csv'
+path_aligned = 'clean_data/hltv_aligned.csv'
 print('finished aligning, storing data to', path_aligned)
 
 print('total num rows', len(final), "final.value_counts()", final["hltv_aligned?"].value_counts())

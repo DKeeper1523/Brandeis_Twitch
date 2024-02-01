@@ -4,7 +4,7 @@ from time_utils import *
 from kill_utils import count_kills
 
 from split_conjoined_round import split_conjoined_round
-from merge_discontinuous_rounds import merge_disontinuous_rounds
+from merge_discontinuous_rounds import merge_disontinuous_rounds_v2
 
 from tqdm.auto import tqdm
 
@@ -51,7 +51,7 @@ def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
     final = pd.DataFrame()
 
     #Main loop to change each group
-    for df_merged in tqdm(merge_disontinuous_rounds(df_video), desc=file_name, position=pbar_pos, leave=False):
+    for df_merged in tqdm(merge_disontinuous_rounds_v2(df_video), desc=file_name, position=pbar_pos, leave=False):
         for round in split_conjoined_round(df_merged):
             #acquire lock
             lock.acquire()

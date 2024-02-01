@@ -66,6 +66,7 @@ all_groupby = df_all.groupby(all_groupkey, sort=False)
 #init final: to store aligned data
 final = pd.DataFrame(columns=df_all.columns)
 
+nth_round = 0
 k=0
 RECORD = []
 
@@ -163,6 +164,10 @@ for map_played, group in all_groupby:
         #  - As for program, we here check if the current round number is greater or equal to the hltv record
         print("num_round: ", num_round)
         print("len(hltv_align)", len(hltv_align))
+
+        #edit the round id from 0 to n
+        group.loc[round_index,'Round_ID'] = nth_round
+        nth_round += 1
 
         if num_round <= len(hltv_align):
             #mark alignment

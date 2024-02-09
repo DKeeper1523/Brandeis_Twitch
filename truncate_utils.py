@@ -11,20 +11,27 @@ def unify_index(df_src, other_dfs):
     #Unification is finish
     # print("Unification is finished")
 
-def truncateAndCombineAll(df_text, df_audio, df_video):
+def truncateAndCombineAll(df_text, df_audio, df_video, df_vocal):
+    #audio truncating
     truncateAudio(df_audio)
+    truncateAudio(df_vocal)
+    #video truncating
     truncateVideo(df_video)
     #get the minimal length
-    min_len = min([len(x) for x in [df_video, df_audio, df_text]])
+    min_len = min([len(x) for x in [df_video, df_audio, df_vocal, df_text]])
 
     #remove original indices
+    #  - audio
     df_audio = df_audio.iloc[:, 1:]
-    # df_video = df_video.iloc[:, 1:]
+    df_vocal = df_vocal.iloc[:, 1:]
+    #  - video
+    df_video = df_video.iloc[:, 1:]
     df_video.rename(columns={'Timestamp': 'Stream_Time_Past'}, inplace=True)
+    #  - text
     df_text = df_text.iloc[:, 1:]
 
     #concatenate
-    combined = pd.concat([df_video, df_audio, df_text], axis=1)
+    combined = pd.concat([df_video, df_audio, df_vocal, df_text], axis=1)
     #trucate to the shortest df
     combined = combined.iloc[:min_len, :]
     return combined

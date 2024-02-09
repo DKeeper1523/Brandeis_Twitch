@@ -51,7 +51,7 @@ def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
     final = pd.DataFrame()
 
     #Main loop to change each group
-    for df_merged in tqdm(merge_disontinuous_rounds_v2(df_video), desc=file_name, position=pbar_pos, leave=False):
+    for df_merged in tqdm(merge_disontinuous_rounds_v2(df_video), desc=file_name, position=pbar_pos, leave=True):
         for round in split_conjoined_round(df_merged):
             #acquire lock
             lock.acquire()

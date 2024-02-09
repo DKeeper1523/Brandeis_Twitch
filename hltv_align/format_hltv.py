@@ -3,13 +3,13 @@ from collections import OrderedDict
 
 #from utils import fix_col_with_replace
 
-# path_hltv = "clean_data\\hltv_scrape.csv"
-path_hltv = "/Users/tianyaohu/Desktop/dev/CS_Twitch/clean_data/hltv_scrape.csv"
+path_hltv = "clean_data\\hltv_scrape.csv"
+# path_hltv = "./clean_data/hltv_scrape.csv"
 
 df_hltv = pd.read_csv(path_hltv)
 
 #import base csv
-path_base = '/Users/tianyaohu/Desktop/dev/CS_Twitch/Brandeis_Twitch_RA/basic_information.csv'
+path_base = 'Brandeis_Twitch_RA/basic_information.csv'
 df_base = pd.read_csv(path_base)
 
 #cleaning of df_hltv
@@ -114,9 +114,6 @@ print('df_hltv', df_hltv.loc[ df_hltv.index[:num_row], ['T0', 'T1', 'Side_T0', '
 
 # score_alignment_checker(df_hltv)
 
-# print("after")
-# print('df_hltv', df_hltv.loc[ df_hltv.index[:num_row], ['T0', 'T1', 'Side_T0', 'Side_T1', 'Outcome', 'Score_T0', 'Score_T1']])
-
 for match_info, df_match in map_groups:
     #print indicationn for processing
     print('match_info', match_info)
@@ -139,11 +136,10 @@ for match_info, df_match in map_groups:
 
 
 ########### TESTING SWAPPER #############
-# print("after")
 # print('df_hltv', df_hltv.loc[ df_hltv.index[:num_row], ['T0', 'T1', 'Side_T0', 'Side_T1', 'Outcome', 'Score_T0', 'Score_T1']])
 
-
-# df_hltv.to_csv('clean_data/formatted_hltv_scrape.csv', index=False)
-df_hltv.to_csv('/Users/tianyaohu/Desktop/dev/CS_Twitch/clean_data/formatted_hltv_scrape.csv', index=False)
+print("finished formating, outputing csv")
+#output
+df_hltv.to_csv('./clean_data/formatted_hltv_scrape.csv', index=False)
 
 

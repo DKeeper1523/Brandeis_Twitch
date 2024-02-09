@@ -63,7 +63,7 @@ print('dict_hltv', dict_hltv.keys())
 STAGE2SKIP = ['Showmatch']
 
 #create groupby for all.csv
-all_groupkey = ['Date', 'Team_0', 'Team_1'] #Map is unreliable, because of OCR in consistancy.
+all_groupkey = ['Date', 'Team_0', 'Team_1'] 
 all_groupby = df_all.groupby(all_groupkey, sort=False)
 
 #init final: to store aligned data
@@ -111,44 +111,91 @@ for map_played, group in all_groupby:
     dict_index = matched_keys.index(ls_keys)
 
     #list of hltv match recording
-    ls_hltv = [ls_dict[dict_index][key] for key in ls_keys]
+    hltv_map_gen = (ls_dict[dict_index][key] for key in ls_keys)
 
-    # hltv alignment data
-    try:
-        hltv_align = ls_hltv[0] ###########################IMPORTANT##################
-    except:
-        #get all possible keys
-        print('failed to find acceptable hltv match for', map_played)
-        continue
-
-    game_indices = group["Round_ID"].index
     #consecutive index
-    round_group = game_indices.groupby((group["Round_ID"].diff() != 0).cumsum())
+    round_group = group.index.groupby((group["Round_ID"].diff() != 0).cumsum())
 
-    #before aligning data, first align team names
-    bool_t0_aligned = hltv_align['T0'].unique()[0] == t0_t1_map[0]
 
     print('--------------------------------------------------')
-    print('map_played', map_played)
+    # print('t0_t1_map', t0_t1_map)
+    # # print('ls_keys', ls_keys)
     print('ls_keys', ls_keys)
-    print('len ls_hltv', [len(x) for x in ls_hltv])
+    # print()
+    # print('len(round_group.items())', len(round_group.items()))
+    # print('start of group', group.index[0])
+    # print('end of group', group.index[-1])
+    print("-----------------------------------")
 
     num_round_skipped = 0
     indices_to_kill = []
+    bool_drop_indices = True
+
+    #Map Detection: BO3 focused
+    bool_seen_00 = False
+    round_count_offset = 0
+    prev_round_id = pd.DataFrame()
 
     for nth_round, round_index in round_group.items():
         #trusting FCFS; after checking stream, there is a replay of particular rounds
         #  - where the stream overlay is exactly the same as the normal match except it is replay
         #  - To avoid this, we will only trust the first num_round_skipped rounds played for all matches
         #  - As for program, we here check if the current round number is greater or equal to the hltv record
-        print('nth_round', nth_round)
+        # print('nth_round', nth_round)
 
-        if nth_round <= len(hltv_align):
+        cur_round_id = group.loc[round_index[0], ['Team_0', 'Team_1', 'Map']]
+
+        # bool_none_repeat = not cur_round_id.equals(prev_round_id)
+        score_is_00 = all(group.loc[round_index[0], ['Score_0', 'Score_1']] == [0, 0])
+
+        #check if score is 0, 0
+        if score_is_00 and bool_seen_00 == False: #and bool_none_repeat:
+            prev_round_id = cur_round_id
+            print("00000000000000000000000000000000000000")
+            print(f'0, 0 detected, starting of map, round index {round_index[0]}')
+            print(f'starting index {group.index[0]}; ending index {group.index[-1]}')
+            #record the round 
+            bool_seen_00 = True
+            #set round_offset
+            round_count_offset = nth_round -1 #nth_round starts from 1
+            #get hltv_align
+            try:
+                print("HLTV NEXT")
+                hltv_align = next(hltv_map_gen) ###########################IMPORTANT##################
+            except:
+                #get all possible keys
+                print('failed to find acceptable hltv match for', map_played)
+                #print the start and end of the affected indices
+                print(f'skipping start {group.index[0]}; end: {group.index[-1]}')
+                break
+
+        #init relative round: offsetting for previous map played (BO3) and replays
+        relative_round = nth_round - round_count_offset
+
+        print('===========t0_t1_map', t0_t1_map)
+        print('roundID', group.loc[round_index[0], 'Round_ID'])
+        print('is score 0-0', score_is_00)
+        print('bool_seen_00', bool_seen_00)
+        print('round_index start', round_index[0], 'round_index end', round_index[-1])
+        print('relative_round >= len(hltv_align)', relative_round >= len(hltv_align), 'score_max', max(group.loc[round_index[0], ['Score_0', 'Score_1']]))
+        print(f'R# { relative_round} HLTV# {len(hltv_align)} offset {round_count_offset}')
+
+        #Skipping the replayes here, round exhaustion and score >= 15:
+        if relative_round >= len(hltv_align) and max(group.loc[round_index[0], ['Score_0', 'Score_1']]) >= 15:
+            #set flag for 0,0 triggering.
+            bool_seen_00 = False
+            #print the start of the affected indices
+            print('==================================')
+            print(f'round_exhaustion_triggered start {round_index[0]}; end: {round_index[-1]}')
+            print('==================================')
+
+    # """
+        if relative_round <= len(hltv_align):
             #mark alignment
             group.loc[round_index,'hltv_aligned?'] = True
 
             #first get correct round index for hltv_align
-            hltv_index = hltv_align.index[nth_round-1] #nth_round starts from 1
+            hltv_index = hltv_align.index[relative_round-1] #relative_round starts from 1
 
             #Align map
             group.loc[round_index,'Map'] = hltv_align.loc[hltv_index, 'Map']
@@ -158,6 +205,9 @@ for map_played, group in all_groupby:
 
             #Fill outcome
             group.loc[round_index,'Outcome'] = hltv_align.loc[hltv_index, 'Outcome']
+
+            #before aligning data, first align team names
+            bool_t0_aligned = hltv_align['T0'].unique()[0] == t0_t1_map[0]
 
             #align everything except Map
             if bool_t0_aligned:
@@ -184,8 +234,7 @@ for map_played, group in all_groupby:
                 group.loc[round_index,'Side_Team0'] = hltv_align.loc[hltv_index, 'Side_T1']
                 group.loc[round_index,'Side_Team1'] = hltv_align.loc[hltv_index, 'Side_T0']
 
-            print("hltv_align.loc[hltv_index, 'Score_Stream_T0']", hltv_align.loc[hltv_index, 'Score_Stream_T0'])
-            print("hltv_align.loc[hltv_index, 'Score_Stream_T1']", hltv_align.loc[hltv_index, 'Score_Stream_T1'])
+            print("hltv_align.loc[hltv_index, ['Score_Stream_T0', 'Score_Stream_T1']]: ", hltv_align.loc[hltv_index, ['Score_Stream_T0', 'Score_Stream_T1']].values)
 
         else:
             #mark indices to kill
@@ -196,37 +245,14 @@ for map_played, group in all_groupby:
             #log starting time of round
             RECORD.append(group.loc[round_index[0], 'Stream_Time_Past'])
 
-    #     break if num_round_skipped is greater than 3
-        if num_round_skipped > 2:
-            print("-----------------------------------")
-            print("skip more than 3 rounds, break loop")
-            print('t0_t1_map', t0_t1_map)
-            print('map_played', map_played)
-            print('round_id', group.loc[round_index[0], 'Round_ID'])
-            print('Stream_Time_Past', group.loc[round_index[0], 'Stream_Time_Past'])
-            break
-    if num_round_skipped > 2:
-        final = pd.concat([final, group], axis=0)
-        break
-
-    #kill indices
-    # group.drop(indices_to_kill, inplace=True)
-    #print both the number and indices to drop
-    print("Dropped indices", indices_to_kill)
-    print("Dropped num indices to kill", len(indices_to_kill))
-
-    # if 'paiN' in t0_t1_map and 'Complexity' in t0_t1_map:
-    #     break
-
-
     #combine
     final = pd.concat([final, group], axis=0)
 
-
 path_aligned = 'clean_data/hltv_aligned.csv'
 print('finished aligning, storing data to', path_aligned)
-
 print('total num rows', len(final), "final.value_counts()", final["hltv_aligned?"].value_counts())
 
 #Finally, save the aligned data
+print(f'output file  to {path_aligned}')
 final.to_csv(path_aligned, index=False)
+# """

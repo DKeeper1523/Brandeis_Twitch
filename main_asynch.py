@@ -69,6 +69,7 @@ def cleanAndMerge(name_sub):
     CSV_VIDEO = "/video_analysis.csv"
     CSV_AUDIO = "/audio_analysis.csv"
     CSV_VOCAL = "/audio_analysis_vocal.csv"
+    CSV_MUSIC = "/audio_analysis_accompaniment.csv"
 
     path2data = dir_src + '/' + name_sub
     path_out = dir_members + '/' + name_sub
@@ -84,6 +85,7 @@ def cleanAndMerge(name_sub):
     df_video = pd.read_csv(path2data + CSV_VIDEO, low_memory=False, encoding='latin1')
     df_audio = pd.read_csv(path2data + CSV_AUDIO)
     df_vocal = pd.read_csv(path2data + CSV_VOCAL)
+    df_music = pd.read_csv(path2data + CSV_MUSIC)
 
     cur_process_id = current_process()._identity[0]-1
     #clean data
@@ -93,7 +95,7 @@ def cleanAndMerge(name_sub):
     unify_index(df_video, [df_text, df_audio])
 
     #combine combined
-    combined = truncateAndCombineAll(df_text, df_audio, df_video, df_vocal)
+    combined = truncateAndCombineAll(df_text, df_audio, df_video, df_vocal, df_music)
 
     #reset and insert index
     combined.reset_index(drop=True, inplace=True)

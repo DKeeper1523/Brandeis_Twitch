@@ -136,11 +136,13 @@ def setCol2Mode(df, ls_col):
             return
         df.loc[:, col] = mode
 
-#needs a function that operate on cell, so "func" needs to return a string
+# Applies a custom function to fix values in specified columns.
 def fix_col_with_fun(df, cols, func):
     for col_name in cols:
         df[col_name] = df[col_name].apply(func)
 
+
+###### Functions designed to clean and format specific types of data related to time, stage information, and health points.
 #To fix time
 #   - we are preparing to fix time: (1) convert everything to a float number, as they r ez
 def time(txt):

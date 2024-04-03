@@ -64,7 +64,7 @@ def cleanVideoDf(file_name, pbar_pos, df_video, df_info, min_row_per_group):
             lock.release()
 
             if len(round) >= min_row_per_group:            
-                #Show Round Start and End
+                #Visualize Round Start and End
                 # show_column = ['Timestamp', 'Stage', 'Map', 'Ingame_Time_Left']
                 # print(round.loc[:, show_column].iloc[[0,-1], :])
 

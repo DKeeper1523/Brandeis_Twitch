@@ -1,6 +1,5 @@
 import pandas as pd
 import numpy as np
-from statistics import mode
 from fuzzywuzzy import process, fuzz
 import re
 import logging
@@ -14,7 +13,7 @@ STAGE_NAME = "Stage"
 T_STAMP = "Timestamp"
 
 #init needed lambda's
-#S2 here is a single 
+#lambda here is mainly for cleaninng up fuzzy round scores
 subS1WithS2 = lambda s1, s2, txt, toLower = False: re.sub(r'[' + re.escape(s1) + ']', s2, txt) if toLower == False else re.sub('|'.join([*s1]), s2, txt.lower())
 subZeros = lambda string, zero_target = 'oOu', toLower = False: subS1WithS2(zero_target,'0', string, toLower) 
 subOnes = lambda string, one_target = 'ji', toLower = False: subS1WithS2(one_target,'1', string, toLower) 
@@ -24,35 +23,42 @@ def printFull(df, NAME_DF = ""):
     with pd.option_context('display.max_rows', None, 'display.max_columns', None):  # more options can be specified also
         print("PRINTING FULL " + NAME_DF + ": \n", df)
 
+# Initializes a logger to record debug messages to a file.
 def init_log(log_name):
     logging.basicConfig(filename=log_name, level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
     logging.FileHandler(log_name, mode='w')
     # print("logger initialized")
 
+# Insert columns for timing into a DataFrame at specified positions.
 def insertTimers(df, ls_headrs):
     #   - str used here is saving info for further modification
     _insertEmptyColumns(df, ls_headrs, i_insert=5, _dtype = str) 
 
+# Insert columns for map scores into a DataFrame at specified positions.
 def insertMapScores(df, map_score_headers):
     _insertEmptyColumns(df, map_score_headers, i_insert=2, _dtype= int)
 
+# Extracts date and stream information from a `csv_name` string and inserts them into a DataFrame.
 def insertDateAndStream(df, csv_name, loc=1):
     date = csv_name[csv_name.index('/')+1:csv_name.index('_')]
     stream = csv_name[csv_name.index(' ')+1]
     df.insert(loc, 'Stream', stream)
     df.insert(loc, 'Date', date)
 
-#column with be inserted in order, first in list will be the last place inserted
+# Extracts date and stream information from a `csv_name` string and inserts them into a DataFrame.
 def _insertEmptyColumns(df, ls_col_name, i_insert, _dtype):
     for col_name in ls_col_name:
         # print("inserted ", col_name)
         df.insert(loc = i_insert, column = col_name, value = pd.Series(dtype = _dtype))
 
+# Adds a space in the stage information at a specified index to ensure proper formatting.
 def addStageSep(df):
     _addSpace = lambda txt, index = -3: txt[:index] + " " + txt[index:]
     #remove all space then add the space in the right place
     df.loc[:, 'Stage'] = df.loc[:, 'Stage'].apply(lambda x: re.sub(r'\s+', '', str(x))).apply(_addSpace)
 
+
+# Corrects stage information based on match format (BO1 or BO3).
 def fixBO1Stage(df):
     # BO is BO1 and stage has no digit
     bo1 = (df['BO'] == 'BO1')
@@ -65,6 +71,8 @@ def fixBO3(df):
     no_zero.fillna(False, inplace = True)
     df.loc[no_zero, 'BO'] = 'BO3'
 
+
+# Fills NA/NaN values in specified columns with forward or backward filling.
 def fillNaCols(df, ls_header, bfill = True, fFill = False):
     for h in ls_header:
         if fFill:
@@ -72,18 +80,21 @@ def fillNaCols(df, ls_header, bfill = True, fFill = False):
         if bfill:
             df[h].bfill(inplace=True)
 
+# Converts specified columns to numeric types, with an option to fill missing values with zeros.
 def convertCols2Numeric(df, ls_header, _errors = 'ignore', bool_fillzero = False):
     df.loc[:,ls_header] = df.loc[:,ls_header].apply(pd.to_numeric, errors=_errors, downcast='integer')
     #fill na
     if bool_fillzero:
         df.loc[:, ls_header] = df.loc[:, ls_header].fillna(value=0)
 
+# Groups a DataFrame based on discontinuous rounds and splits conjoined rounds.
 def groupDf(df):
     # grouped_df = df.groupby((df[T_STAMP].diff()>1).cumsum(), sort=False) #BEFORE 12/22/2023
 
     grouped_df = (round for df_merged in merge_disontinuous_rounds(df) for round in split_conjoined_round(df_merged))
     return grouped_df
 
+# Finds the most similar string in a list to a base string, with options for case sensitivity and a cutoff for match quality.
 def mapMostSimilar(base, ls_guess, guess_up = False, guess_low = False, cutoff = 30):
     ls_guess = list(ls_guess)
     if guess_up:
@@ -98,7 +109,7 @@ def mapMostSimilar(base, ls_guess, guess_up = False, guess_low = False, cutoff =
         return ''
 
 
-#To fix certain column with an iterable ground truth
+# Replaces values in specified columns based on the closest match from a list of truth values. It can also set the entire column to the mode.
 def fix_col_with_replace(df, ls_col, ls_truth, setCol2Mode_ = False):
     #Collect all the columns that needs to be fixed
     #   - assume that they are in the same domain

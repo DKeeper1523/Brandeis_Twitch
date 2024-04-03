@@ -7,7 +7,6 @@ import os
 import time
 from tqdm.auto import tqdm
 from multiprocessing import Pool, current_process
-from functools import partial
 
 import warnings
 warnings.simplefilter(action='ignore', category=FutureWarning)
@@ -23,7 +22,7 @@ parser.add_argument(dest='path_csv_info', type=str, help="CSV containing basic i
 parser.add_argument('-out', type=str, help="directory for storing cleaned video data")
 parser.add_argument('-l', '--log', action='store_true', help='Toggle logging')
 parser.add_argument('--thresh', type=int, nargs='?', const=30, help='minimum number row for in_game round')
-#Run with: python3 Brandeis_Twitch_RA/main_asynch.py rawdata Brandeis_Twitch_RA/basic_information.csv -l
+#Run with: python Brandeis_Twitch_RA/main_asynch.py rawdata Brandeis_Twitch_RA/basic_information.csv -l
 
 # Parse and print the results
 args = parser.parse_args()

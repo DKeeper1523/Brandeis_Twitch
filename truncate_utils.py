@@ -27,7 +27,7 @@ def truncateAndCombineAll(df_text, df_audio, df_video, df_vocal, df_music):
     df_vocal = df_vocal.iloc[:, 1:]
     df_music = df_music.iloc[:, 1:]
     #  - video
-    df_video = df_video.iloc[:, 1:]
+    # df_video = df_video.iloc[:, 1:] #first column is Round_ID
     df_video.rename(columns={'Timestamp': 'Stream_Time_Past'}, inplace=True)
     #  - text
     df_text = df_text.iloc[:, 1:]

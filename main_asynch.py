@@ -100,6 +100,8 @@ def cleanAndMerge(name_sub):
     #unify index
     unify_index(combined, [df_text, df_audio])
 
+    combined.rename(columns={'Timestamp': 'Stream_Time_Past'}, inplace=True)
+
     #write to csv
     combined.to_csv(path_out + ".csv", index = False)
     return combined

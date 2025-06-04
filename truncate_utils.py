@@ -11,7 +11,7 @@ def unify_index(df_src, other_dfs):
     #Unification is finish
     # print("Unification is finished")
 
-def truncateAndCombineAll(df_text, df_audio, df_video, df_vocal, df_music):
+def truncateAndCombineAll(df_text, df_audio, df_video):
     #audio truncating
     truncateAudio(df_audio)
     # truncateAudio(df_vocal)

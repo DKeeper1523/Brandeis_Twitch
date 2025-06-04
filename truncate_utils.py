@@ -36,6 +36,7 @@ def truncateAndCombineAll(df_text, df_audio, df_video):
     combined = pd.concat([df_video, df_audio, df_text], axis=1)
     #trucate to the shortest df
     combined = combined.iloc[:min_len, :]
+    combined.rename(columns={'Stream_Time_Past': 'Timestamp'}, inplace=True)
     return combined
 
 def truncateAudio(df_audio, num_split = 5):

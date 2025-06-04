@@ -86,19 +86,19 @@ def cleanAndMerge(name_sub):
     # df_vocal = pd.read_csv(path2data + CSV_VOCAL)
     # df_music = pd.read_csv(path2data + CSV_MUSIC)
 
-    cur_process_id = current_process()._identity[0]-1
-    #clean data
-    df_video = cleanVideoDf(path2data+"_video processing", cur_process_id, df_video, df_info, min_row) 
-
-    #unify index
-    unify_index(df_video, [df_text, df_audio])
-
     #combine combined
     combined = truncateAndCombineAll(df_text, df_audio, df_video)
 
     #reset and insert index
     combined.reset_index(drop=True, inplace=True)
     # combined.insert(1, "Time_Stamp", combined.index)
+
+    cur_process_id = current_process()._identity[0]-1
+    #clean data
+    combined = cleanVideoDf(path2data+"_video processing", cur_process_id, combined, df_info, min_row) 
+
+    #unify index
+    unify_index(combined, [df_text, df_audio])
 
     #write to csv
     combined.to_csv(path_out + ".csv", index = False)
